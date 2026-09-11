@@ -144,7 +144,7 @@
 
     /* W1 [S, I] sensor -> interneuron, W2 [I, M] inter -> motor,
        W3 [S, M] direct sensor -> motor shortcuts (giant-fibre path). */
-    const w1 = S.map((_, si) => new Array(I.length).fill(0));
+    const w1 = S.map(() => new Array(I.length).fill(0));
     for (const s of S) for (const c of s.connections) {
       const t = iIdx.get(c.target);
       if (t !== undefined) w1[S.indexOf(s)][t] += Number(c.weight);
