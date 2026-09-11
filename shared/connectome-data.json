@@ -1,0 +1,5767 @@
+{
+ "metadata": {
+  "dataset": "curated model \u2014 Drosophila escape / leg motor circuit (offline builder)",
+  "generated_by": "tools/neuron-fetch/build_curated.py",
+  "generated_at": "2026-09-11T15:01:27+00:00",
+  "seed": 20260911,
+  "notes": "Connectome-inspired: real neuron identities and synapse-weight-seeded edges, but simplified wiring generated deterministically for browser use. fly-brain.js maps each neuron to a hidden node and each weighted edge to an initial network weight; it is NOT a literal biological simulation.",
+  "n_neurons": 92,
+  "n_edges": 966
+ },
+ "neurons": [
+  {
+   "id": "TA0_P0",
+   "name": "TA0_P0",
+   "role": "sensor",
+   "bias": -0.6910758346054178,
+   "tuning": {
+    "input": 0,
+    "sign": 1,
+    "gain": 1.09
+   },
+   "connections": [
+    {
+     "target": "LN26",
+     "weight": 1.427,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": 1.1766,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.1439,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 1.0917,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": 1.0682,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": 1.0141,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 0.9996,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": 0.9697,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": 0.881,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": 0.7856,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.7626,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": 0.704,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 0.3941,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA0_N0",
+   "name": "TA0_N0",
+   "role": "sensor",
+   "bias": -1.051422648919292,
+   "tuning": {
+    "input": 0,
+    "sign": -1,
+    "gain": 0.873
+   },
+   "connections": [
+    {
+     "target": "LN19",
+     "weight": 1.455,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.3828,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.3442,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": 1.2406,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": 1.1508,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.7939,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.7538,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 0.705,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 0.6843,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": 0.5012,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": 0.4542,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 0.3618,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA0_P1",
+   "name": "TA0_P1",
+   "role": "sensor",
+   "bias": -0.5782856779262384,
+   "tuning": {
+    "input": 0,
+    "sign": 1,
+    "gain": 1.204
+   },
+   "connections": [
+    {
+     "target": "LN00",
+     "weight": 1.5556,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.5014,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 1.1816,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.0305,
+     "count": null
+    },
+    {
+     "target": "LN19",
+     "weight": 0.4632,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": 0.3282,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA0_N1",
+   "name": "TA0_N1",
+   "role": "sensor",
+   "bias": -1.0902914678840236,
+   "tuning": {
+    "input": 0,
+    "sign": -1,
+    "gain": 1.191
+   },
+   "connections": [
+    {
+     "target": "MN03_R",
+     "weight": 1.5393,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": 1.3714,
+     "count": null
+    },
+    {
+     "target": "LN23",
+     "weight": 1.2236,
+     "count": null
+    },
+    {
+     "target": "LN07",
+     "weight": 1.1881,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 1.1824,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.0083,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": 0.8333,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": 0.6412,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 0.5678,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.4347,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 0.3587,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": 0.3357,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA1_P0",
+   "name": "TA1_P0",
+   "role": "sensor",
+   "bias": -1.3640933963017106,
+   "tuning": {
+    "input": 1,
+    "sign": 1,
+    "gain": 1.41
+   },
+   "connections": [
+    {
+     "target": "MN06_L",
+     "weight": 1.5506,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": 1.3004,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.8851,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": 0.7149,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": 0.6924,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 0.6912,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.6227,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": 0.5833,
+     "count": null
+    },
+    {
+     "target": "LN15",
+     "weight": 0.535,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 0.5149,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA1_N0",
+   "name": "TA1_N0",
+   "role": "sensor",
+   "bias": -0.7476873062183932,
+   "tuning": {
+    "input": 1,
+    "sign": -1,
+    "gain": 0.87
+   },
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": 1.3804,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 1.1773,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.0436,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.0116,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 0.8586,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": 0.8234,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.6934,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 0.6601,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": 0.6511,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.6272,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.534,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.3778,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.3296,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA1_P1",
+   "name": "TA1_P1",
+   "role": "sensor",
+   "bias": -1.122858434010901,
+   "tuning": {
+    "input": 1,
+    "sign": 1,
+    "gain": 1.274
+   },
+   "connections": [
+    {
+     "target": "DNp05_R",
+     "weight": 1.2504,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 1.0185,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": 0.9913,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.9728,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": 0.8765,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": 0.57,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.566,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": 0.438,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": 0.3899,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": 0.373,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA1_N1",
+   "name": "TA1_N1",
+   "role": "sensor",
+   "bias": -0.846892827738986,
+   "tuning": {
+    "input": 1,
+    "sign": -1,
+    "gain": 1.559
+   },
+   "connections": [
+    {
+     "target": "DNp01_R",
+     "weight": 1.4145,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": 1.1122,
+     "count": null
+    },
+    {
+     "target": "DNp05_L",
+     "weight": 1.0451,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": 0.9835,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 0.83,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.6585,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA2_P0",
+   "name": "TA2_P0",
+   "role": "sensor",
+   "bias": -1.014201777538677,
+   "tuning": {
+    "input": 2,
+    "sign": 1,
+    "gain": 1.296
+   },
+   "connections": [
+    {
+     "target": "LN02",
+     "weight": 1.3971,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.2302,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 1.1256,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.1151,
+     "count": null
+    },
+    {
+     "target": "LN26",
+     "weight": 1.106,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.1035,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": 0.8398,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.7515,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 0.7194,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": 0.6965,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": 0.6785,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.5133,
+     "count": null
+    },
+    {
+     "target": "LN04",
+     "weight": 0.4921,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA2_N0",
+   "name": "TA2_N0",
+   "role": "sensor",
+   "bias": -0.7678079923603054,
+   "tuning": {
+    "input": 2,
+    "sign": -1,
+    "gain": 1.285
+   },
+   "connections": [
+    {
+     "target": "MN00_L",
+     "weight": 1.5868,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 1.514,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": 1.002,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.9545,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": 0.943,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": 0.8949,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.7342,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 0.7174,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": 0.5662,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA2_P1",
+   "name": "TA2_P1",
+   "role": "sensor",
+   "bias": -1.0438078488577194,
+   "tuning": {
+    "input": 2,
+    "sign": 1,
+    "gain": 1.573
+   },
+   "connections": [
+    {
+     "target": "LN14",
+     "weight": 1.5737,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": 1.3846,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 1.2503,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.2014,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.0829,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": 0.6129,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": 0.5303,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": 0.4897,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 0.3353,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA2_N1",
+   "name": "TA2_N1",
+   "role": "sensor",
+   "bias": -0.7470153374208991,
+   "tuning": {
+    "input": 2,
+    "sign": -1,
+    "gain": 1.443
+   },
+   "connections": [
+    {
+     "target": "DLM_L",
+     "weight": 1.5678,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 1.4713,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.3271,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": 1.3102,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": 1.0469,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.8812,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.8721,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": 0.7328,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": 0.6731,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 0.4813,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA3_P0",
+   "name": "TA3_P0",
+   "role": "sensor",
+   "bias": -1.341324363495379,
+   "tuning": {
+    "input": 3,
+    "sign": 1,
+    "gain": 1.541
+   },
+   "connections": [
+    {
+     "target": "LN04",
+     "weight": 1.5898,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 1.5058,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.2246,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.22,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": 1.2168,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.1594,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.0937,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 1.0776,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": 0.8944,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 0.4628,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA3_N0",
+   "name": "TA3_N0",
+   "role": "sensor",
+   "bias": -1.3617020930471437,
+   "tuning": {
+    "input": 3,
+    "sign": -1,
+    "gain": 1.266
+   },
+   "connections": [
+    {
+     "target": "LN23",
+     "weight": 1.4568,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": 1.4122,
+     "count": null
+    },
+    {
+     "target": "DNg02_L",
+     "weight": 0.9173,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.7522,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.7135,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": 0.6027,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 0.6009,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA3_P1",
+   "name": "TA3_P1",
+   "role": "sensor",
+   "bias": -1.4750903078923443,
+   "tuning": {
+    "input": 3,
+    "sign": 1,
+    "gain": 1.332
+   },
+   "connections": [
+    {
+     "target": "LN24",
+     "weight": 1.5364,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.5357,
+     "count": null
+    },
+    {
+     "target": "LN18",
+     "weight": 1.527,
+     "count": null
+    },
+    {
+     "target": "LN19",
+     "weight": 1.5112,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": 1.4325,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.3006,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 1.1599,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": 1.1206,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": 0.8646,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": 0.7527,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": 0.5779,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": 0.5563,
+     "count": null
+    },
+    {
+     "target": "LN04",
+     "weight": 0.3515,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": 0.3302,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA3_N1",
+   "name": "TA3_N1",
+   "role": "sensor",
+   "bias": -0.6168924968822845,
+   "tuning": {
+    "input": 3,
+    "sign": -1,
+    "gain": 0.844
+   },
+   "connections": [
+    {
+     "target": "DNp05_L",
+     "weight": 1.4714,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": 1.3933,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.3597,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": 1.2031,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.9708,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": 0.7746,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.5335,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 0.4032,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": 0.3318,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA4_P0",
+   "name": "TA4_P0",
+   "role": "sensor",
+   "bias": -1.26422976143614,
+   "tuning": {
+    "input": 4,
+    "sign": 1,
+    "gain": 1.252
+   },
+   "connections": [
+    {
+     "target": "DNg02_L",
+     "weight": 1.5402,
+     "count": null
+    },
+    {
+     "target": "LN06",
+     "weight": 1.5136,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.4721,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": 1.4243,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": 1.4169,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.398,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": 0.9496,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": 0.8888,
+     "count": null
+    },
+    {
+     "target": "LN26",
+     "weight": 0.8866,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": 0.811,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.753,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": 0.4955,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": 0.3987,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": 0.3451,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA4_N0",
+   "name": "TA4_N0",
+   "role": "sensor",
+   "bias": -1.3152472301089446,
+   "tuning": {
+    "input": 4,
+    "sign": -1,
+    "gain": 1.414
+   },
+   "connections": [
+    {
+     "target": "LN18",
+     "weight": 1.4913,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": 1.108,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": 1.0396,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.0292,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 0.5075,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": 0.4421,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA4_P1",
+   "name": "TA4_P1",
+   "role": "sensor",
+   "bias": -1.1536454628115602,
+   "tuning": {
+    "input": 4,
+    "sign": 1,
+    "gain": 1.245
+   },
+   "connections": [
+    {
+     "target": "LN02",
+     "weight": 1.5803,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.5635,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": 1.5276,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": 1.4971,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": 1.3663,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": 1.118,
+     "count": null
+    },
+    {
+     "target": "DNg02_L",
+     "weight": 0.9911,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": 0.831,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": 0.8013,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.7462,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": 0.7167,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": 0.5766,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 0.5076,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": 0.3407,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA4_N1",
+   "name": "TA4_N1",
+   "role": "sensor",
+   "bias": -0.8417653597439129,
+   "tuning": {
+    "input": 4,
+    "sign": -1,
+    "gain": 1.183
+   },
+   "connections": [
+    {
+     "target": "PSI1_L",
+     "weight": 1.4931,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": 1.2539,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.1806,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": 0.9599,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.8637,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": 0.7335,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 0.4026,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.3881,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA5_P0",
+   "name": "TA5_P0",
+   "role": "sensor",
+   "bias": -0.942247840308217,
+   "tuning": {
+    "input": 5,
+    "sign": 1,
+    "gain": 1.233
+   },
+   "connections": [
+    {
+     "target": "LN18",
+     "weight": 1.4089,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": 1.3676,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": 1.1271,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": 1.0943,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": 1.0378,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": 0.9339,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.899,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": 0.8512,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 0.6643,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 0.4556,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": 0.3981,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA5_N0",
+   "name": "TA5_N0",
+   "role": "sensor",
+   "bias": -0.813602250279823,
+   "tuning": {
+    "input": 5,
+    "sign": -1,
+    "gain": 1.328
+   },
+   "connections": [
+    {
+     "target": "LN05",
+     "weight": 1.5764,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.3193,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": 1.1586,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": 1.109,
+     "count": null
+    },
+    {
+     "target": "LN26",
+     "weight": 0.9933,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.894,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": 0.4314,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA5_P1",
+   "name": "TA5_P1",
+   "role": "sensor",
+   "bias": -1.3164850261910277,
+   "tuning": {
+    "input": 5,
+    "sign": 1,
+    "gain": 1.41
+   },
+   "connections": [
+    {
+     "target": "LN13",
+     "weight": 1.5928,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.5793,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.319,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.2704,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": 1.2677,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": 1.2139,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.8296,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": 0.8192,
+     "count": null
+    },
+    {
+     "target": "LN23",
+     "weight": 0.7052,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.6489,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": 0.4662,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": 0.4424,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.3529,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TA5_N1",
+   "name": "TA5_N1",
+   "role": "sensor",
+   "bias": -0.8190713829243174,
+   "tuning": {
+    "input": 5,
+    "sign": -1,
+    "gain": 1.089
+   },
+   "connections": [
+    {
+     "target": "DLM_R",
+     "weight": 1.3754,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": 1.1277,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": 1.0925,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": 1.0271,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": 1.0151,
+     "count": null
+    },
+    {
+     "target": "LN15",
+     "weight": 0.8175,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": 0.5033,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": 0.4369,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "GF_L",
+   "name": "GF_L",
+   "role": "interneuron",
+   "bias": -1.928219035564519,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN01_R",
+     "weight": 1.5006,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.4694,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 1.4511,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.2828,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": -1.1567,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": -1.074,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.0502,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.0093,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.8573,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.8434,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.5195,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.4758,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.4475,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": -0.1913,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "GF_R",
+   "name": "GF_R",
+   "role": "interneuron",
+   "bias": -1.8076191078464139,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_L",
+     "weight": 1.8346,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.7455,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": -1.0599,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 0.8277,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.7889,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.6912,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.6339,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.6182,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": -0.4971,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.3711,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.2073,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI2_L",
+   "name": "PSI2_L",
+   "role": "interneuron",
+   "bias": -2.2763255822388304,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_R",
+     "weight": 1.75,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.3508,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.2569,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.2486,
+     "count": null
+    },
+    {
+     "target": "LN07",
+     "weight": -1.1637,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.8544,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.7507,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.5897,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.5757,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.5662,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.5001,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.4638,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 0.4453,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": -0.3682,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.2534,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -0.2131,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI2_R",
+   "name": "PSI2_R",
+   "role": "interneuron",
+   "bias": -1.6374376306300467,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN00_L",
+     "weight": 1.9478,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 1.6753,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.4443,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.4188,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.3893,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.2527,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.2313,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": -1.1888,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": -1.1557,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": -1.0737,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.8659,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.8463,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.7012,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.6957,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.5671,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.4932,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": -0.2981,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.2278,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI3_L",
+   "name": "PSI3_L",
+   "role": "interneuron",
+   "bias": -1.7031105568728757,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_R",
+     "weight": 1.6896,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.3979,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 1.2994,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": -0.8091,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.5858,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.5743,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.5135,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": -0.4673,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.4457,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.434,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.3294,
+     "count": null
+    },
+    {
+     "target": "PSI3_L",
+     "weight": -0.1318,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI3_R",
+   "name": "PSI3_R",
+   "role": "interneuron",
+   "bias": -1.8072938348331784,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN01_R",
+     "weight": 1.863,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.8171,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.4833,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": -1.1749,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 1.0644,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.0606,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.057,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.0214,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.0039,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.916,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.839,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.8126,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": -0.7195,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.6901,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.4408,
+     "count": null
+    },
+    {
+     "target": "TA0_P1",
+     "weight": -0.4288,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.4163,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.4005,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNg02_L",
+   "name": "DNg02_L",
+   "role": "interneuron",
+   "bias": -1.592875520972055,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_R",
+     "weight": 1.8539,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.6547,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -1.1792,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.1029,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.0771,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": -0.854,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": -0.8412,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 0.8088,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.75,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.7357,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.7345,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.7179,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.659,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.5838,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.5509,
+     "count": null
+    },
+    {
+     "target": "DNg02_L",
+     "weight": -0.4966,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.4197,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNg02_R",
+   "name": "DNg02_R",
+   "role": "interneuron",
+   "bias": -2.171062653058372,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN00_R",
+     "weight": 1.9537,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.8855,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.773,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.6258,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.4086,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.2722,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 1.233,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 1.2056,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.1813,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.9745,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": -0.8988,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.4655,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": -0.4139,
+     "count": null
+    },
+    {
+     "target": "DNg02_R",
+     "weight": -0.3947,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": -0.3615,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNg04_L",
+   "name": "DNg04_L",
+   "role": "interneuron",
+   "bias": -2.2535787693446987,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN04_L",
+     "weight": 1.9643,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 1.2613,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.2506,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.2077,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.1083,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.9048,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.8415,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 0.8173,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.8087,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.7864,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.7374,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.7261,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.6294,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.5416,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.4293,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": -0.4285,
+     "count": null
+    },
+    {
+     "target": "DNg04_L",
+     "weight": -0.356,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.2997,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNg04_R",
+   "name": "DNg04_R",
+   "role": "interneuron",
+   "bias": -2.0022041624390576,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN06_L",
+     "weight": 1.948,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.811,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.5372,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": -1.1694,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.1502,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.0564,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.9391,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 0.8669,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.6629,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.5853,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.487,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.4359,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": -0.3692,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": -0.3261,
+     "count": null
+    },
+    {
+     "target": "DNp05_L",
+     "weight": -0.2509,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNp01_L",
+   "name": "DNp01_L",
+   "role": "interneuron",
+   "bias": -1.9575104857665067,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN00_R",
+     "weight": 1.9024,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.6506,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.3013,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -1.1348,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.1196,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.9299,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.8725,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.8715,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.755,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.694,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.642,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": -0.6386,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.5195,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.4115,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.4072,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.2934,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNp01_R",
+   "name": "DNp01_R",
+   "role": "interneuron",
+   "bias": -2.0853832432003645,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN01_L",
+     "weight": 1.9426,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.7014,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.5006,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.1668,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 0.9915,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.9531,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.9298,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.8558,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.83,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": -0.7069,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.5217,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.4319,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.4103,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.3022,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -0.2039,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.1939,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNp05_L",
+   "name": "DNp05_L",
+   "role": "interneuron",
+   "bias": -2.178150190064512,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": 1.6847,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.5803,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": -0.9548,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": -0.9528,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.9367,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 0.9114,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.7915,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.6639,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.2313,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.23,
+     "count": null
+    },
+    {
+     "target": "DNp05_L",
+     "weight": -0.1931,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DNp05_R",
+   "name": "DNp05_R",
+   "role": "interneuron",
+   "bias": -1.732013132419651,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_L",
+     "weight": 1.9915,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.6894,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.2985,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.1466,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.85,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": -0.8144,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.7213,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.6722,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.6528,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.6403,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 0.5794,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -0.4992,
+     "count": null
+    },
+    {
+     "target": "DNp05_R",
+     "weight": -0.4982,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.4751,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": -0.4218,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.2975,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.279,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN00",
+   "name": "LN00",
+   "role": "interneuron",
+   "bias": -2.3279107704151523,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_R",
+     "weight": 1.5055,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": -1.1652,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 0.9359,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.6964,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": -0.4007,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.318,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.2692,
+     "count": null
+    },
+    {
+     "target": "TA0_P1",
+     "weight": -0.2259,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.2212,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.2196,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN01",
+   "name": "LN01",
+   "role": "interneuron",
+   "bias": -2.4778016679865926,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_L",
+     "weight": 1.9644,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.8732,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 1.7914,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.5435,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.2781,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": -1.1789,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.1138,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": -1.0105,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.8681,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.846,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.7487,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.7175,
+     "count": null
+    },
+    {
+     "target": "LN07",
+     "weight": -0.6438,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.5374,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.4452,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": -0.1449,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN02",
+   "name": "LN02",
+   "role": "interneuron",
+   "bias": -1.7114602078993482,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": 1.9382,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.9129,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.0964,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.8832,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": -0.8089,
+     "count": null
+    },
+    {
+     "target": "LN04",
+     "weight": -0.7267,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.7173,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.5488,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.535,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": -0.4981,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.4664,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": -0.3706,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.3085,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN03",
+   "name": "LN03",
+   "role": "interneuron",
+   "bias": -1.9150466788139635,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN01_L",
+     "weight": 1.9784,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.9396,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.7518,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.7402,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.7182,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.7119,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.6868,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.3572,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -1.1814,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.1526,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.1318,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.8793,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 0.6511,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.5934,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.593,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.5223,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": -0.4146,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.4007,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN04",
+   "name": "LN04",
+   "role": "interneuron",
+   "bias": -1.8488082552226768,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN02_R",
+     "weight": 1.8476,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 1.8268,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 1.5579,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.416,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 1.1536,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.7936,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 0.7685,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.7158,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.6828,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": -0.478,
+     "count": null
+    },
+    {
+     "target": "LN04",
+     "weight": -0.4572,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.3156,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": -0.2632,
+     "count": null
+    },
+    {
+     "target": "LN06",
+     "weight": -0.2426,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN05",
+   "name": "LN05",
+   "role": "interneuron",
+   "bias": -1.5202343408709054,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN08_L",
+     "weight": 1.8032,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.7798,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.6567,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.4193,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 0.9651,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.8554,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": -0.7665,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.6863,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.4433,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.4373,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.4329,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -0.4232,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.4094,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN06",
+   "name": "LN06",
+   "role": "interneuron",
+   "bias": -1.939275848097192,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN06_R",
+     "weight": 1.9457,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.4228,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.3872,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -1.1558,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -0.9262,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.8525,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": -0.6975,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.6506,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 0.6135,
+     "count": null
+    },
+    {
+     "target": "LN06",
+     "weight": -0.3846,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN07",
+   "name": "LN07",
+   "role": "interneuron",
+   "bias": -2.042356786424901,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DNg02_L",
+     "weight": -1.1885,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.1109,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 1.066,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.9038,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 0.7638,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.6249,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": -0.6008,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -0.5969,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.4823,
+     "count": null
+    },
+    {
+     "target": "LN07",
+     "weight": -0.4762,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 0.4206,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN08",
+   "name": "LN08",
+   "role": "interneuron",
+   "bias": -1.95500138929533,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_R",
+     "weight": 1.6174,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 1.5219,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.4418,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.2143,
+     "count": null
+    },
+    {
+     "target": "DNp01_L",
+     "weight": -1.1447,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.9981,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.7599,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.6366,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.518,
+     "count": null
+    },
+    {
+     "target": "GF_L",
+     "weight": -0.4161,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": -0.3545,
+     "count": null
+    },
+    {
+     "target": "TA0_P1",
+     "weight": -0.3281,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": -0.3152,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN09",
+   "name": "LN09",
+   "role": "interneuron",
+   "bias": -2.3498154006583154,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN01_L",
+     "weight": 1.9848,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.6257,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.3947,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.2023,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.1692,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.1014,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": -0.9932,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.8836,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.8593,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 0.8587,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.7976,
+     "count": null
+    },
+    {
+     "target": "LN02",
+     "weight": -0.7163,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.6722,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.6714,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.632,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.4984,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.447,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": -0.188,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN10",
+   "name": "LN10",
+   "role": "interneuron",
+   "bias": -1.6509160768439088,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN02_L",
+     "weight": 1.5768,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.4243,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.1773,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.8765,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.8057,
+     "count": null
+    },
+    {
+     "target": "LN08",
+     "weight": -0.6997,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.6119,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.5929,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.5732,
+     "count": null
+    },
+    {
+     "target": "LN04",
+     "weight": -0.5564,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.5219,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.392,
+     "count": null
+    },
+    {
+     "target": "LN10",
+     "weight": -0.3397,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.2847,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN11",
+   "name": "LN11",
+   "role": "interneuron",
+   "bias": -1.7019145178682047,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_L",
+     "weight": 1.7691,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.5642,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.5522,
+     "count": null
+    },
+    {
+     "target": "MN08_R",
+     "weight": 1.4247,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.1034,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": 1.0025,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.9446,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.8996,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.7735,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": -0.6887,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.5612,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": -0.3822,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.367,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.2803,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": -0.2407,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN12",
+   "name": "LN12",
+   "role": "interneuron",
+   "bias": -1.781025577153565,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "LN26",
+     "weight": -0.88,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.7735,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.6703,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.5515,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.4477,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.4012,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.3891,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.2653,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -0.2454,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": -0.1643,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN13",
+   "name": "LN13",
+   "role": "interneuron",
+   "bias": -1.544295241359952,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN02_L",
+     "weight": 1.9232,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 1.8878,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.7284,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": -1.1031,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.0031,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.9881,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.8848,
+     "count": null
+    },
+    {
+     "target": "DNp01_R",
+     "weight": -0.7248,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.6663,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.5421,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.4081,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.3614,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.3366,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.2458,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN14",
+   "name": "LN14",
+   "role": "interneuron",
+   "bias": -2.2357937116967768,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_L",
+     "weight": 1.9218,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.7822,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.6849,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.5632,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.2497,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.1731,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": -0.9607,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.8912,
+     "count": null
+    },
+    {
+     "target": "LN23",
+     "weight": -0.834,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.8114,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.6193,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.4639,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.3145,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.3121,
+     "count": null
+    },
+    {
+     "target": "LN14",
+     "weight": -0.2507,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN15",
+   "name": "LN15",
+   "role": "interneuron",
+   "bias": -1.9910036771403377,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN08_R",
+     "weight": 1.8343,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.62,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 1.3442,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 1.095,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.8867,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 0.8543,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.6882,
+     "count": null
+    },
+    {
+     "target": "LN18",
+     "weight": -0.4791,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 0.459,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.4513,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.4278,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.3694,
+     "count": null
+    },
+    {
+     "target": "LN15",
+     "weight": -0.206,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN16",
+   "name": "LN16",
+   "role": "interneuron",
+   "bias": -1.9957300972148393,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_L",
+     "weight": 1.9184,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.8325,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.7855,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": -0.9252,
+     "count": null
+    },
+    {
+     "target": "DNg02_L",
+     "weight": -0.8857,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.8457,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.8299,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 0.7539,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 0.7069,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.6574,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.6424,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.4663,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": -0.3131,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.2973,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN17",
+   "name": "LN17",
+   "role": "interneuron",
+   "bias": -1.615307337012445,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_L",
+     "weight": 1.9745,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.8506,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.6301,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.3789,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": 1.1868,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": -1.0053,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 0.7662,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 0.7267,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.5721,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.5453,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.5053,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.4366,
+     "count": null
+    },
+    {
+     "target": "LN15",
+     "weight": -0.3764,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.3642,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.361,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": -0.3432,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.2963,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN18",
+   "name": "LN18",
+   "role": "interneuron",
+   "bias": -1.6906097837968446,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN02_R",
+     "weight": 1.7588,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.4986,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.2038,
+     "count": null
+    },
+    {
+     "target": "LN13",
+     "weight": -0.8071,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": -0.7244,
+     "count": null
+    },
+    {
+     "target": "LN23",
+     "weight": -0.6887,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.6494,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.5906,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.5881,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.5846,
+     "count": null
+    },
+    {
+     "target": "LN18",
+     "weight": -0.2916,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN19",
+   "name": "LN19",
+   "role": "interneuron",
+   "bias": -1.6246186833278158,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": 1.8179,
+     "count": null
+    },
+    {
+     "target": "MN07_R",
+     "weight": 1.4749,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.2825,
+     "count": null
+    },
+    {
+     "target": "MN06_L",
+     "weight": 1.2318,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 1.1433,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 1.139,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.7803,
+     "count": null
+    },
+    {
+     "target": "TA0_P1",
+     "weight": -0.6513,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": -0.5151,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": -0.4852,
+     "count": null
+    },
+    {
+     "target": "LN00",
+     "weight": -0.4736,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.401,
+     "count": null
+    },
+    {
+     "target": "LN19",
+     "weight": -0.2624,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN20",
+   "name": "LN20",
+   "role": "interneuron",
+   "bias": -2.170436951357618,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": 1.7805,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 1.5481,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.3398,
+     "count": null
+    },
+    {
+     "target": "LN11",
+     "weight": -1.0654,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": -0.762,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.7329,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -0.6268,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.557,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.5056,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.4967,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": -0.178,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN21",
+   "name": "LN21",
+   "role": "interneuron",
+   "bias": -2.477349473491393,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_R",
+     "weight": 1.9606,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.4514,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.2671,
+     "count": null
+    },
+    {
+     "target": "GF_R",
+     "weight": -1.0071,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.9488,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 0.8602,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.846,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 0.836,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 0.8189,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.7977,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 0.7861,
+     "count": null
+    },
+    {
+     "target": "LN19",
+     "weight": -0.4989,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.437,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.3325,
+     "count": null
+    },
+    {
+     "target": "LN06",
+     "weight": -0.2233,
+     "count": null
+    },
+    {
+     "target": "LN21",
+     "weight": -0.1797,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN22",
+   "name": "LN22",
+   "role": "interneuron",
+   "bias": -1.7407297172506122,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN06_R",
+     "weight": 1.7394,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 1.6513,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.6242,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.5167,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.4946,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.277,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.9918,
+     "count": null
+    },
+    {
+     "target": "LN09",
+     "weight": -0.9862,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.8544,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.7016,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.6817,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.6797,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.6316,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 0.5961,
+     "count": null
+    },
+    {
+     "target": "LN01",
+     "weight": -0.5699,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -0.5304,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 0.5254,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.4346,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN23",
+   "name": "LN23",
+   "role": "interneuron",
+   "bias": -1.6702077493067,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_L",
+     "weight": 1.8756,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.5548,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": -1.1426,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.0129,
+     "count": null
+    },
+    {
+     "target": "DNg04_R",
+     "weight": -0.9843,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.9798,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.9428,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.658,
+     "count": null
+    },
+    {
+     "target": "PSI2_L",
+     "weight": -0.5384,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.5365,
+     "count": null
+    },
+    {
+     "target": "MN06_R",
+     "weight": 0.4632,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.3436,
+     "count": null
+    },
+    {
+     "target": "LN23",
+     "weight": -0.1731,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN24",
+   "name": "LN24",
+   "role": "interneuron",
+   "bias": -2.443175317809138,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_L",
+     "weight": 1.9884,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": 1.9635,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": 1.779,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 1.7101,
+     "count": null
+    },
+    {
+     "target": "LN27",
+     "weight": -1.1676,
+     "count": null
+    },
+    {
+     "target": "LN22",
+     "weight": -0.9974,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.8553,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.8264,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.8051,
+     "count": null
+    },
+    {
+     "target": "LN20",
+     "weight": -0.7393,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.6838,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.6278,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": -0.305,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN25",
+   "name": "LN25",
+   "role": "interneuron",
+   "bias": -2.2995375810907444,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN07_R",
+     "weight": 1.67,
+     "count": null
+    },
+    {
+     "target": "MN02_R",
+     "weight": 1.2999,
+     "count": null
+    },
+    {
+     "target": "MN02_L",
+     "weight": 1.2416,
+     "count": null
+    },
+    {
+     "target": "LN07",
+     "weight": -1.1449,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.1345,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": -1.0972,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.8694,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.631,
+     "count": null
+    },
+    {
+     "target": "LN25",
+     "weight": -0.42,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.3926,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.3505,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.2744,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.2509,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN26",
+   "name": "LN26",
+   "role": "interneuron",
+   "bias": -1.8123585813066851,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN05_L",
+     "weight": 1.7393,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.2387,
+     "count": null
+    },
+    {
+     "target": "LN26",
+     "weight": -1.0842,
+     "count": null
+    },
+    {
+     "target": "LN16",
+     "weight": -0.9681,
+     "count": null
+    },
+    {
+     "target": "MN03_L",
+     "weight": 0.8876,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.8406,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 0.6826,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.5553,
+     "count": null
+    },
+    {
+     "target": "LN05",
+     "weight": -0.4868,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.4797,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 0.4532,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.4317,
+     "count": null
+    },
+    {
+     "target": "LN26",
+     "weight": -0.2429,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN27",
+   "name": "LN27",
+   "role": "interneuron",
+   "bias": -1.9692969205532433,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN02_L",
+     "weight": 1.9548,
+     "count": null
+    },
+    {
+     "target": "MN05_R",
+     "weight": 1.845,
+     "count": null
+    },
+    {
+     "target": "MN05_L",
+     "weight": 1.4829,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 1.2489,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.1848,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": 1.1085,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": 0.862,
+     "count": null
+    },
+    {
+     "target": "MN04_L",
+     "weight": 0.8255,
+     "count": null
+    },
+    {
+     "target": "MN04_R",
+     "weight": 0.8112,
+     "count": null
+    },
+    {
+     "target": "TA2_P1",
+     "weight": -0.7481,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.6717,
+     "count": null
+    },
+    {
+     "target": "PSI2_R",
+     "weight": -0.6566,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.6487,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.645,
+     "count": null
+    },
+    {
+     "target": "DNg02_L",
+     "weight": -0.6,
+     "count": null
+    },
+    {
+     "target": "LN17",
+     "weight": -0.5717,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 0.5477,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.4661,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN28",
+   "name": "LN28",
+   "role": "interneuron",
+   "bias": -2.425962200118173,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN07_R",
+     "weight": 1.9907,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.8326,
+     "count": null
+    },
+    {
+     "target": "MN07_L",
+     "weight": 1.1476,
+     "count": null
+    },
+    {
+     "target": "MN01_L",
+     "weight": 0.7909,
+     "count": null
+    },
+    {
+     "target": "PSI3_R",
+     "weight": -0.7506,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": 0.7161,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.6369,
+     "count": null
+    },
+    {
+     "target": "MN01_R",
+     "weight": 0.5912,
+     "count": null
+    },
+    {
+     "target": "DNp05_L",
+     "weight": -0.4563,
+     "count": null
+    },
+    {
+     "target": "LN28",
+     "weight": -0.3695,
+     "count": null
+    },
+    {
+     "target": "LN15",
+     "weight": -0.3129,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.2536,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "LN29",
+   "name": "LN29",
+   "role": "interneuron",
+   "bias": -2.4350951496850257,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN08_L",
+     "weight": 1.9168,
+     "count": null
+    },
+    {
+     "target": "MN00_L",
+     "weight": 1.8401,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": 0.8506,
+     "count": null
+    },
+    {
+     "target": "MN03_R",
+     "weight": 0.7356,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.6775,
+     "count": null
+    },
+    {
+     "target": "LN24",
+     "weight": -0.5766,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.4403,
+     "count": null
+    },
+    {
+     "target": "LN03",
+     "weight": -0.2894,
+     "count": null
+    },
+    {
+     "target": "LN12",
+     "weight": -0.2571,
+     "count": null
+    },
+    {
+     "target": "LN29",
+     "weight": -0.2069,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TTM_L",
+   "name": "TTM_L",
+   "role": "motor",
+   "bias": -2.8671574305840393,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_R",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.8415,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.7501,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.4208,
+     "count": null
+    },
+    {
+     "target": "TTM_L",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.3128,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.2297,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "TTM_R",
+   "name": "TTM_R",
+   "role": "motor",
+   "bias": -2.14465419653017,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TTM_L",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.8043,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.8028,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.7687,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.5247,
+     "count": null
+    },
+    {
+     "target": "TTM_R",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.3451,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DLM_L",
+   "name": "DLM_L",
+   "role": "motor",
+   "bias": -2.993138364517642,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_R",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.8901,
+     "count": null
+    },
+    {
+     "target": "TA4_N0",
+     "weight": -0.6961,
+     "count": null
+    },
+    {
+     "target": "TA0_P0",
+     "weight": -0.5057,
+     "count": null
+    },
+    {
+     "target": "DLM_L",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.2553,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.243,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "DLM_R",
+   "name": "DLM_R",
+   "role": "motor",
+   "bias": -2.6649458614396826,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "DLM_L",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.7861,
+     "count": null
+    },
+    {
+     "target": "TA5_N1",
+     "weight": -0.6513,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.5751,
+     "count": null
+    },
+    {
+     "target": "DLM_R",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.2833,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.2778,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.2709,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI1_L",
+   "name": "PSI1_L",
+   "role": "motor",
+   "bias": -2.6857445454718682,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_R",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.8537,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.8197,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.7661,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.6254,
+     "count": null
+    },
+    {
+     "target": "PSI1_L",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.3879,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.2859,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "PSI1_R",
+   "name": "PSI1_R",
+   "role": "motor",
+   "bias": -2.2509902174778236,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "PSI1_L",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.8531,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.552,
+     "count": null
+    },
+    {
+     "target": "PSI1_R",
+     "weight": -0.4,
+     "count": null
+    },
+    {
+     "target": "TA3_N1",
+     "weight": -0.3912,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.3844,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN00_L",
+   "name": "MN00_L",
+   "role": "motor",
+   "bias": -2.7062503227620445,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA5_P1",
+     "weight": -0.5265,
+     "count": null
+    },
+    {
+     "target": "TA2_N0",
+     "weight": -0.4997,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN01_L",
+   "name": "MN01_L",
+   "role": "motor",
+   "bias": -2.965543555910923,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA0_N1",
+     "weight": -0.8119,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.3238,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.2671,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN02_L",
+   "name": "MN02_L",
+   "role": "motor",
+   "bias": -2.828019465955066,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA3_N1",
+     "weight": -0.7883,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.7674,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.6412,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.5134,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.4589,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN03_L",
+   "name": "MN03_L",
+   "role": "motor",
+   "bias": -2.297801370394121,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA2_P1",
+     "weight": -0.7623,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.6224,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.4274,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.3869,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.237,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN04_L",
+   "name": "MN04_L",
+   "role": "motor",
+   "bias": -2.883352226689998,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA5_P0",
+     "weight": -0.7319,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.3087,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN05_L",
+   "name": "MN05_L",
+   "role": "motor",
+   "bias": -2.014620330611549,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA2_P0",
+     "weight": -0.7927,
+     "count": null
+    },
+    {
+     "target": "TA5_P0",
+     "weight": -0.7792,
+     "count": null
+    },
+    {
+     "target": "TA1_N1",
+     "weight": -0.7245,
+     "count": null
+    },
+    {
+     "target": "TA5_N0",
+     "weight": -0.3092,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN06_L",
+   "name": "MN06_L",
+   "role": "motor",
+   "bias": -2.532148473140171,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA1_N0",
+     "weight": -0.8327,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.7787,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.6743,
+     "count": null
+    },
+    {
+     "target": "TA1_P0",
+     "weight": -0.5585,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.2811,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN07_L",
+   "name": "MN07_L",
+   "role": "motor",
+   "bias": -2.326060129990376,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA2_P0",
+     "weight": -0.8455,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.7136,
+     "count": null
+    },
+    {
+     "target": "TA4_N1",
+     "weight": -0.2152,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN08_L",
+   "name": "MN08_L",
+   "role": "motor",
+   "bias": -2.73712646302942,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN00_R",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.4473,
+     "count": null
+    },
+    {
+     "target": "MN08_L",
+     "weight": -0.4,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN00_R",
+   "name": "MN00_R",
+   "role": "motor",
+   "bias": -2.228418998875398,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "MN08_L",
+     "weight": -1.3,
+     "count": null
+    },
+    {
+     "target": "TA1_P1",
+     "weight": -0.8243,
+     "count": null
+    },
+    {
+     "target": "TA2_N1",
+     "weight": -0.6579,
+     "count": null
+    },
+    {
+     "target": "MN00_R",
+     "weight": -0.4,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN01_R",
+   "name": "MN01_R",
+   "role": "motor",
+   "bias": -2.7276226493562206,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA3_P1",
+     "weight": -0.5638,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.5363,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN02_R",
+   "name": "MN02_R",
+   "role": "motor",
+   "bias": -2.3819808971409175,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA3_P0",
+     "weight": -0.3498,
+     "count": null
+    },
+    {
+     "target": "TA5_P1",
+     "weight": -0.3044,
+     "count": null
+    },
+    {
+     "target": "TA3_N0",
+     "weight": -0.2851,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN03_R",
+   "name": "MN03_R",
+   "role": "motor",
+   "bias": -2.123821899262873,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA0_N1",
+     "weight": -0.8653,
+     "count": null
+    },
+    {
+     "target": "TA4_P1",
+     "weight": -0.6532,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.5795,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN04_R",
+   "name": "MN04_R",
+   "role": "motor",
+   "bias": -2.6257422499106733,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA0_P1",
+     "weight": -0.8941,
+     "count": null
+    },
+    {
+     "target": "TA4_P0",
+     "weight": -0.6239,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN05_R",
+   "name": "MN05_R",
+   "role": "motor",
+   "bias": -2.8931888245232695,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA2_N1",
+     "weight": -0.6946,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN06_R",
+   "name": "MN06_R",
+   "role": "motor",
+   "bias": -2.465649948672408,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA0_P1",
+     "weight": -0.7814,
+     "count": null
+    },
+    {
+     "target": "TA1_N0",
+     "weight": -0.5292,
+     "count": null
+    },
+    {
+     "target": "TA3_P0",
+     "weight": -0.258,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN07_R",
+   "name": "MN07_R",
+   "role": "motor",
+   "bias": -2.1932359500079097,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA0_P0",
+     "weight": -0.7221,
+     "count": null
+    }
+   ]
+  },
+  {
+   "id": "MN08_R",
+   "name": "MN08_R",
+   "role": "motor",
+   "bias": -2.6713850880123666,
+   "tuning": null,
+   "connections": [
+    {
+     "target": "TA2_P1",
+     "weight": -0.7467,
+     "count": null
+    },
+    {
+     "target": "TA2_P0",
+     "weight": -0.5146,
+     "count": null
+    },
+    {
+     "target": "TA0_N0",
+     "weight": -0.5038,
+     "count": null
+    },
+    {
+     "target": "TA0_N1",
+     "weight": -0.3989,
+     "count": null
+    },
+    {
+     "target": "TA3_P1",
+     "weight": -0.3721,
+     "count": null
+    }
+   ]
+  }
+ ]
+}
