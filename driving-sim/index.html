@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driving Sim — A Fly Brain Plays Games</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --edge: #30363d;
+    --text: #e6edf3; --dim: #8b949e; --accent: #58a6ff; --good: #3fb950; --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+  }
+  header { width: 100%; max-width: 1080px; padding: 14px 16px 6px; }
+  h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+  h1 .fly { color: var(--accent); }
+  .sub { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  main { width: 100%; max-width: 1080px; padding: 8px 16px 24px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .stage { flex: 1 1 620px; min-width: 320px; }
+  .side { flex: 1 1 300px; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+  canvas { display: block; width: 100%; background: #10151c; border: 1px solid var(--edge); border-radius: 8px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--edge);
+    border-radius: 6px; padding: 8px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.on { border-color: var(--accent); color: var(--accent); }
+  button.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 12px; font-size: 13px; }
+  .card h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+  .kv b { font-weight: 600; color: var(--text); }
+  .kv span { color: var(--dim); text-align: right; }
+  .probs { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .prob { display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 8px; font-size: 12px; }
+  .prob .track { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+  .prob .fill { height: 100%; background: var(--accent); width: 0%; }
+  .prob.best .fill { background: var(--good); }
+  .prob.best .name { color: var(--good); }
+  .neurons { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .neuron { display: grid; grid-template-columns: 70px 66px 1fr 44px; gap: 6px; align-items: center; font-size: 11px; }
+  .neuron .track { height: 6px; background: #21262d; border-radius: 3px; overflow: hidden; }
+  .neuron .fill { height: 100%; background: var(--accent); }
+  .neuron.sensor .fill { background: #d29922; }
+  .neuron.interneuron .fill { background: #a371f7; }
+  .neuron.motor .fill { background: var(--good); }
+  .neuron .role { color: var(--dim); }
+  .legend { color: var(--dim); font-size: 11px; margin-top: 6px; line-height: 1.6; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
+  .status { font-size: 12px; color: var(--dim); margin-top: 8px; min-height: 18px; }
+  .status.crashed { color: var(--bad); }
+  kbd { background: #21262d; border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+  a { color: var(--accent); }
+  .hint { margin-top: 8px; font-size: 12px; color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="fly">◑ fly-brain</span> / driving-sim</h1>
+  <div class="sub">Play it yourself, then let the connectome-seeded fly brain learn the road via REINFORCE.</div>
+</header>
+<main>
+  <section class="stage">
+    <canvas id="c" width="900" height="600"></canvas>
+    <div class="bar">
+      <button id="btn-human" class="on">🎮 Human Play</button>
+      <button id="btn-fly">🧠 Watch the Fly Brain Play</button>
+      <button id="btn-reset" class="danger">↺ Reset Brain</button>
+    </div>
+    <div id="status" class="status"></div>
+    <div class="hint" id="hint"><kbd>←</kbd>/<kbd>→</kbd> steer (or <kbd>A</kbd>/<kbd>D</kbd>) · <kbd>↑</kbd>/<kbd>↓</kbd> speed (or <kbd>W</kbd>/<kbd>S</kbd>) · <kbd>R</kbd> restart</div>
+  </section>
+  <aside class="side">
+    <div class="card">
+      <h2>Agent</h2>
+      <div class="kv" id="stats"></div>
+    </div>
+    <div class="card" id="card-probs">
+      <h2>Action probabilities</h2>
+      <div class="probs" id="probs"></div>
+    </div>
+    <div class="card">
+      <h2>Who is firing</h2>
+      <div class="neurons" id="neurons"></div>
+      <div class="legend">
+        <span class="dot" style="background:#d29922"></span>sensors (tuned to game features)
+        <span class="dot" style="background:#a371f7"></span>interneurons
+        <span class="dot" style="background:#3fb950"></span>motor pool
+      </div>
+    </div>
+    <div class="card">
+      <h2>Rewards</h2>
+      <div style="color:var(--dim); font-size:12px; line-height:1.6">
+        stay on the road <b style="color:var(--good)">+0.02/frame</b> · centred
+        <b style="color:var(--good)">+0.03</b> · checkpoint
+        <b style="color:var(--good)">+1</b> · off road
+        <b style="color:var(--bad)">−0.05</b> · crash
+        <b style="color:var(--bad)">−1</b> and episode ends
+      </div>
+    </div>
+  </aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="../shared/fly-brain.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ============================ track geometry ============================ */
+  const W = 900, H = 600, ROAD = 90;
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+
+  /* Curved centreline: x offset from road centre as a function of y. */
+  function centreX(y) { return 60 + 90 * Math.sin(y / 260) + 50 * Math.sin(y / 97); }
+  function carState(s) {
+    const cx = centreX(s.y);
+    return { cx, laneOffset: s.x - cx, onRoad: Math.abs(s.x - cx) < ROAD / 2 - 14 };
+  }
+
+  function newSim() {
+    return { x: centreX(0), y: 0, v: 130, lane: 1, checkpoint: 0, alive: true, t: 0 };
+  }
+  let sim = newSim();
+
+  /* ============================ fly-brain wiring ========================== */
+  const FEATURES = ["laneOffset", "vNorm", "curveAhead", "curveSign"];
+  const ACTIONS = ["steerL", "hold", "steerR"];
+
+  let mode = "human";          // 'human' | 'fly'
+  let brainReady = false;
+  let lastProbs = [1 / 3, 1 / 3, 1 / 3];
+  let lastActionName = null;
+
+  function stateVector(s) {
+    const st = carState(s);
+    const curve0 = centreX(s.y + 40), curve1 = centreX(s.y + 110);
+    const d1 = curve0 - st.cx, d2 = curve1 - st.cx;
+    return [
+      Math.max(-1, Math.min(1, st.laneOffset / (ROAD / 2))),
+      s.v / 260,
+      Math.max(0, Math.min(1, (d2 - d1) / 60 + 0.5)),
+      Math.max(-1, Math.min(1, d1 / 60)),
+    ];
+  }
+
+  async function initBrain() {
+    if (brainReady) return;
+    const pools = await window.flyBrain.init({ features: FEATURES, actions: ACTIONS });
+    console.log("fly-brain ready:", pools);
+    document.getElementById("card-probs").style.visibility = "visible";
+    brainReady = true;
+    buildProbRows(); buildNeuronRows();
+  }
+  initBrain();
+
+  /* ================================ input ================================= */
+  const keys = {};
+  addEventListener("keydown", (e) => {
+    keys[e.key.toLowerCase()] = true;
+    if (["arrowleft", "arrowright", "arrowup", "arrowdown"].includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.key.toLowerCase() === "r") restart();
+  });
+  addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+
+  /* =============================== actions ================================ */
+  function applyAction(name, dt) {
+    if (name === "steerL") sim.lane = -1;
+    else if (name === "steerR") sim.lane = 1;
+    else sim.lane = 0;
+    const k = keys;
+    const up = k["arrowup"] || k["w"], down = k["arrowdown"] || k["s"];
+    if (up) sim.v = Math.min(240, sim.v + 160 * dt);
+    else if (down) sim.v = Math.max(70, sim.v - 220 * dt);
+  }
+
+  /* Steer speed must beat the worst-case road drift: max |d(centreX)/dy| ~0.86
+     px/px × vmax 240 px/s ≈ 206 px/s, so 260 leaves headroom at top speed. */
+  const STEER_SPEED = 260;
+
+  function stepSim(dt) {
+    sim.x += sim.lane * STEER_SPEED * dt;
+    sim.y += sim.v * dt;
+    if (sim.y > (sim.checkpoint + 1) * 600) { sim.checkpoint++; reward(1); }
+    sim.t += dt;
+  }
+
+  /* ============================ rewards (fly) ============================= */
+  function reward(v) { if (mode === "fly" && brainReady) window.flyBrain.reward(v); }
+
+  function crash() {
+    sim.alive = false;
+    if (mode === "fly" && brainReady) { reward(-1); window.flyBrain.endEpisode(); }
+    const el = document.getElementById("status");
+    el.textContent = mode === "fly"
+      ? "Crashed. Episode ended — the fly brain just learned something."
+      : "Crashed! Press R or Restart to try again.";
+    el.classList.add("crashed");
+    setTimeout(() => { if (!sim.alive) restart(); }, mode === "fly" ? 400 : 1200);
+  }
+
+  function restart() {
+    if (mode === "fly" && brainReady && sim.alive && sim.t > 0.5) window.flyBrain.endEpisode(); // ended by reset, still learn
+    sim = newSim();
+    const el = document.getElementById("status");
+    el.textContent = ""; el.classList.remove("crashed");
+  }
+
+  /* ============================== main loop =============================== */
+  let lastTs = 0, hudLast = 0;
+  function frame(ts) {
+    const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
+    lastTs = ts;
+
+    if (sim.alive) {
+      if (mode === "fly" && brainReady) {
+        const a = window.flyBrain.act(stateVector(sim));
+        lastActionName = a;
+        lastProbs = window.flyBrain.getActionProbs() || lastProbs;
+        applyAction(a, dt);
+        /* Cap episodes so the REINFORCE replay stays fast when the fly gets good. */
+        if (sim.t > 60) { reward(2); window.flyBrain.endEpisode(); sim = newSim(); }
+      } else {
+        const left = keys["arrowleft"] || keys["a"], right = keys["arrowright"] || keys["d"];
+        applyAction(left ? "steerL" : right ? "steerR" : "hold", dt);
+        lastActionName = null;
+      }
+      stepSim(dt);
+
+      const st = carState(sim);
+      if (!st.onRoad) { reward(-0.05); }
+      else {
+        reward(0.02);
+        if (Math.abs(st.laneOffset) < ROAD * 0.15) reward(0.03);
+      }
+      if (!st.onRoad && Math.abs(st.laneOffset) > ROAD / 2 + 4) crash();
+    }
+
+    draw();
+    if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
+    requestAnimationFrame(frame);
+  }
+
+  /* ================================ render ================================
+     World→screen: the car sits at fixed screen position (cx, CAR_SY); a screen
+     y maps to world y = sim.y + (y - CAR_SY). No modulo scroll — the car and
+     road can never drift apart visually. */
+  const CAR_CX = W / 2, CAR_SY = H / 2 + 120;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* road ribbon + centre dashes */
+    ctx.beginPath();
+    for (let y = -20; y <= H + 20; y += 12) {
+      const cx = centreX(sim.y + (y - CAR_SY));
+      if (y === -20) ctx.moveTo(cx - ROAD / 2, y); else ctx.lineTo(cx - ROAD / 2, y);
+    }
+    for (let y = H + 20; y >= -20; y -= 12) ctx.lineTo(centreX(sim.y + (y - CAR_SY)) + ROAD / 2, y);
+    ctx.closePath();
+    ctx.fillStyle = "#1c2430"; ctx.fill();
+    ctx.strokeStyle = "#3a4757"; ctx.lineWidth = 3; ctx.stroke();
+
+    ctx.setLineDash([18, 22]); ctx.lineWidth = 2; ctx.strokeStyle = "#556274";
+    ctx.beginPath();
+    for (let y = -20; y <= H + 20; y += 12) {
+      const cx = centreX(sim.y + (y - CAR_SY));
+      if (y === -20) ctx.moveTo(cx, y); else ctx.lineTo(cx, y);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    /* next checkpoint line */
+    const cpScreenY = (sim.checkpoint + 1) * 600 - sim.y + CAR_SY;
+    if (cpScreenY > -20 && cpScreenY < H + 20) {
+      const ccx = centreX((sim.checkpoint + 1) * 600);
+      ctx.strokeStyle = "#3fb950"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(ccx - ROAD / 2, cpScreenY); ctx.lineTo(ccx + ROAD / 2, cpScreenY); ctx.stroke();
+    }
+
+    /* car */
+    const stC = carState(sim);
+    ctx.fillStyle = sim.alive ? (mode === "fly" ? "#a371f7" : "#58a6ff") : "#f85149";
+    ctx.fillRect(CAR_CX - 12, CAR_SY - 16, 24, 32);
+    ctx.fillStyle = "#0d1117";
+    ctx.fillRect(CAR_CX - 8, CAR_SY - 10, 16, 8);
+
+    /* fly mode overlay: perceived lane offset + action */
+    if (mode === "fly" && brainReady && sim.alive) {
+      ctx.strokeStyle = "rgba(163,113,247,0.5)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(CAR_CX, CAR_SY); ctx.lineTo(stC.cx, CAR_SY); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(230,237,243,0.85)"; ctx.font = "12px ui-monospace, monospace";
+      ctx.fillText("action: " + lastActionName, CAR_CX + 20, CAR_SY - 22);
+    }
+  }
+
+  /* ================================= HUD ================================== */
+  function buildProbRows() {
+    const el = document.getElementById("probs"); el.innerHTML = "";
+    for (const a of ACTIONS) {
+      const row = document.createElement("div"); row.className = "prob"; row.id = "prob-" + a;
+      row.innerHTML = `<span class="name">${a}</span><span class="track"><span class="fill"></span></span><span class="pct"></span>`;
+      el.appendChild(row);
+    }
+  }
+  function buildNeuronRows() {
+    const el = document.getElementById("neurons"); el.innerHTML = "";
+    for (let i = 0; i < 10; i++) {
+      const row = document.createElement("div"); row.className = "neuron"; row.id = "neu-" + i;
+      row.innerHTML = `<span class="name"></span><span class="role"></span><span class="track"><span class="fill"></span></span><span class="val"></span>`;
+      el.appendChild(row);
+    }
+  }
+
+  function updateHUD() {
+    const max = Math.max(1, sim.checkpoint) * 600;
+    const speedPct = Math.round(100 * (sim.v - 70) / (240 - 70));
+    const rows = [
+      ["mode", mode === "fly" ? "🧠 fly brain" : "🎮 human"],
+      ["episode", mode === "fly" ? window.flyBrain.getStats().episode : "—"],
+      ["avg score", mode === "fly" ? window.flyBrain.getStats().avgScore : "—"],
+      ["distance", Math.round(sim.y) + " m"],
+      ["checkpoints", sim.checkpoint],
+      ["speed", Math.round(sim.v) + " (" + speedPct + "%)"],
+    ];
+    document.getElementById("stats").innerHTML =
+      rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
+
+    if (brainReady && mode === "fly") {
+      const probs = lastProbs;
+      const best = probs.indexOf(Math.max(...probs));
+      ACTIONS.forEach((a, i) => {
+        const row = document.getElementById("prob-" + a);
+        row.classList.toggle("best", i === best);
+        row.querySelector(".fill").style.width = (probs[i] * 100).toFixed(1) + "%";
+        row.querySelector(".pct").textContent = (probs[i] * 100).toFixed(0) + "%";
+      });
+      window.flyBrain.getActivity(10).forEach((n, i) => {
+        const row = document.getElementById("neu-" + i);
+        row.className = "neuron " + n.role;
+        row.querySelector(".name").textContent = n.name;
+        row.querySelector(".role").textContent = n.role;
+        row.querySelector(".fill").style.width = Math.min(100, Math.abs(n.value) * 60) + "%";
+        row.querySelector(".val").textContent = n.value.toFixed(2);
+      });
+    }
+  }
+
+  /* ============================== mode switch ============================= */
+  const bHuman = document.getElementById("btn-human"), bFly = document.getElementById("btn-fly");
+  function setMode(m) {
+    mode = m;
+    bHuman.classList.toggle("on", m === "human");
+    bFly.classList.toggle("on", m === "fly");
+    document.getElementById("hint").style.visibility = m === "human" ? "visible" : "hidden";
+    if (m === "fly") { sim = newSim(); window.flyBrain.setMode("train"); }
+    document.getElementById("status").textContent = m === "fly"
+      ? "The fly is driving. Episodes end on crash; keep it on the road to see it improve."
+      : "";
+  }
+  bHuman.onclick = () => setMode("human");
+  bFly.onclick = () => setMode("fly");
+  /* Honest reset = fresh page: weights live in page memory by design. */
+  document.getElementById("btn-reset").onclick = () => location.reload();
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
