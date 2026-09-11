@@ -1,0 +1,12 @@
+{
+  "name": "a-fly-brain-play-games",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Connectome-seeded fly brain that learns to play games (games themselves load TF.js from CDN; this manifest exists for the Node test harness only).",
+  "scripts": {
+    "test": "node tools/fly-brain-test/run.js"
+  },
+  "devDependencies": {
+    "@tensorflow/tfjs": "^4.20.0"
+  }
+}
