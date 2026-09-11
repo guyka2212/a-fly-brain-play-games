@@ -8,9 +8,10 @@ Guidance for AI agents and humans working in this repo.
 fly brain, seeded from a curated *Drosophila* escape/leg motor connectome, learns to
 play games via reinforcement learning.
 
-There is **no build step, no npm dependencies, no test framework**. The repo is
-served as-is (e.g. GitHub Pages). JS is vanilla (IIFE + globals, TF.js from CDN);
-data tooling is Python 3.10+.
+There is **no build step and no bundler**. Games are vanilla JS (IIFE + globals,
+TF.js from CDN). The repo has one npm manifest, `package.json`, whose only purpose
+is the **Node regression harness** (`npm test`, dev-dep `@tensorflow/tfjs`) — the
+site itself still loads TF.js from CDN. Data tooling is Python 3.10+.
 
 Framing that must be preserved everywhere: this is a **connectome-inspired / seeded**
 network, **not** a literal biological simulation of the fly brain. Keep the honesty
@@ -23,6 +24,7 @@ shared/fly-brain.js            # core agent: connectome-seeded network + REINFOR
                                # (IIFE exposing global `flyBrain`)
 shared/connectome-data.json    # committed static data: 92 neurons / 966 edges.
                                # GENERATED — do not hand-edit.
+tools/fly-brain-test/run.js    # headless Node regression harness (npm test)
 tools/neuron-fetch/
   build_curated.py             # offline, deterministic builder (SEED 20260911), no network
   fetch_connectome.py          # live pull from Janelia neuPrint hemibrain (needs token)
@@ -31,12 +33,18 @@ open-world/ beat-saber/ driving-sim/   # game folders, one self-contained page e
                                         # (currently empty scaffolding)
 .github/workflows/             # reserved for a GitHub Pages deploy workflow
 README.md                      # currently just the title
-package-lock.json              # vestigial — there is no package.json; don't add npm tooling
 ```
+
+There is no separate vestigial package-lock: `package.json` + lockfile belong to
+the harness. Do not add npm tooling for the site itself.
 
 ## Commands
 
 ```bash
+# Regression harness — run after ANY change to shared/fly-brain.js
+npm install        # first time only (installs @tensorflow/tfjs for Node)
+npm test           # 50 fake episodes; exit 0 = training loop + API verified
+
 # Serve locally — MUST run from repo root (see "Relative paths" gotcha below)
 python -m http.server 8000
 # then open http://localhost:8000/<game>/
@@ -50,9 +58,10 @@ export NEUPRINT_APPLICATION_CREDENTIALS="<token>"
 python tools/neuron-fetch/fetch_connectome.py
 ```
 
-**Verification:** there is no typecheck or test suite. Verify changes by serving the
-site and exercising it in the browser: check the console for errors, confirm scores /
-episode counts advance and that network activations render.
+**Verification:** `npm test` for the agent/trainer (it loads the real connectome
+from disk, runs 50 episodes, and asserts weights move). For game pages, also serve
+the site and exercise them in the browser: console clean, scores/episodes advance,
+activations render.
 
 ## Architecture (`shared/fly-brain.js`)
 
@@ -110,6 +119,11 @@ policy, greedy takes argmax (use for demo/playback).
 
 ## Conventions & gotchas
 
+- **Variable shape trap (fixed once, don't reintroduce):** `st.vars` is a flat
+  array `[W1, W2, W3, b2, b3, W4, b4]` — the shape `optimizer.minimize()`,
+  `getWeights()` and the destructure at the top of `forward()` all expect. Never
+  index it as `st.vars.W1`; `npm test` exists precisely to catch that class of bug.
+
 - **Relative paths:** `DATA_PATH = "../shared/connectome-data.json"` — game pages must
   be served from the repo root (`/open-world/`, not `file://`-opened from inside the
   folder if you want real data; the synthetic fallback hides nothing but works).
@@ -131,9 +145,7 @@ policy, greedy takes argmax (use for demo/playback).
 
 ## Known gaps (fix, don't replicate)
 
-- `forward()` computes sensor/interneuron activations but never stores them, so
-  `getHidden()` returns empty arrays and `getActivity()` reports all zeros. Fix by
-  storing `sActs` / `niArr` / motor acts into `st.lastHidden` inside `forward()`
-  (careful: do it after `tf.tidy` disposal — `dataSync()` inside tidy is fine).
+- The three game folders and the Pages workflow are empty scaffolding; nothing
+  renders at the site root yet (no root `index.html`).
 - The three game folders and the Pages workflow are empty scaffolding; nothing
   renders at the site root yet (no root `index.html`).
