@@ -29,10 +29,11 @@ tools/neuron-fetch/
   build_curated.py             # offline, deterministic builder (SEED 20260911), no network
   fetch_connectome.py          # live pull from Janelia neuPrint hemibrain (needs token)
   requirements.txt             # only needed for the live fetch
-open-world/ beat-saber/ driving-sim/   # game folders, one self-contained page each
-                                        # (currently empty scaffolding)
-.github/workflows/             # reserved for a GitHub Pages deploy workflow
-README.md                      # currently just the title
+open-world/ beat-saber/ driving-sim/   # game folders: index.html (page) + game.js
+                                        # (logic); three.js + TF.js from CDN
+.github/workflows/deploy.yml   # GitHub Pages deploy (static upload of repo root)
+index.html                     # hub page linking the 3 games
+README.md
 ```
 
 There is no separate vestigial package-lock: `package.json` + lockfile belong to
@@ -111,9 +112,11 @@ policy, greedy takes argmax (use for demo/playback).
 1. Create `<game>/index.html` (page must sit exactly one level deep; the data path
    `../shared/connectome-data.json` is hardcoded relative in `fly-brain.js`).
 2. Load TF.js UMD from CDN, then `../shared/fly-brain.js` — in that order.
-3. Define ≤ 6 features and the action set; call `init` after user gesture or on load.
+3. Define ≤ 6 features and the action set; call `init` after the Start button
+   (or on load), and honor `?mode=human|fly` as well as the in-page toggle.
 4. Each frame/step: build the state array, call `act`, call `reward` (small, frequent,
    fractional rewards work best), and call `endEpisode` when the episode ends.
+   Throttle `act()` to ≤ ~20 Hz in fast games so the REINFORCE replay stays cheap.
 5. Show stats / neuron-activity overlay via the read APIs.
 6. Keep everything self-contained in the folder; no bundler, no imports.
 
@@ -145,7 +148,12 @@ policy, greedy takes argmax (use for demo/playback).
 
 ## Known gaps (fix, don't replicate)
 
-- The three game folders and the Pages workflow are empty scaffolding; nothing
-  renders at the site root yet (no root `index.html`).
-- The three game folders and the Pages workflow are empty scaffolding; nothing
-  renders at the site root yet (no root `index.html`).
+- The bonus tools (`tools/neuron-to-stl/`, `tools/brain-cli/`,
+  `tools/microcontroller/`) and the live `fetch_connectome.py` path have never
+  been executed against the real APIs in this workspace (they need tokens /
+  hardware); they are written to spec but unverified end-to-end.
+- Game pages are verified by `node --check` + serving, not a real browser here;
+  do a browser pass (console clean, episodes advance, activations render) when
+  one is available.
+- Every game duplicates a small HUD/chart/probs helper block (deliberately —
+  no shared game-side JS by convention). Keep them in sync by hand.

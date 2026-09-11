@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Driving Sim — A Fly Brain Plays Games</title>
+<title>Beat Saber — A Fly Brain Plays Games</title>
 <style>
   :root {
     --bg: #0d1117; --panel: #161b22; --edge: #30363d;
@@ -23,7 +23,7 @@
   .stage { flex: 1 1 700px; min-width: 320px; }
   .side { flex: 1 1 300px; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
 
-  #canvas-wrap { position: relative; width: 100%; aspect-ratio: 3 / 2; background: #10151c; border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; }
+  #canvas-wrap { position: relative; width: 100%; aspect-ratio: 3 / 2; background: #0b0e13; border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; }
   #canvas-wrap canvas { display: block; width: 100%; height: 100%; }
 
   .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
@@ -61,12 +61,9 @@
   .legend { color: var(--dim); font-size: 11px; margin-top: 6px; line-height: 1.6; }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
   .status { font-size: 12px; color: var(--dim); min-height: 18px; }
-  .status.crashed { color: var(--bad); }
-  kbd { background: #21262d; border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px; font-size: 11px; }
   a { color: var(--accent); }
   .hint { margin-top: 8px; font-size: 12px; color: var(--dim); }
 
-  /* ---------------- start screen ---------------- */
   #start-screen {
     position: fixed; inset: 0; background: rgba(13, 17, 23, 0.94);
     display: flex; align-items: center; justify-content: center; z-index: 10;
@@ -84,8 +81,8 @@
 </head>
 <body>
 <header>
-  <h1><span class="fly">◑ fly-brain</span> / driving-sim</h1>
-  <div class="sub">Play it yourself, then watch a connectome-seeded fly brain learn the road live (REINFORCE).</div>
+  <h1><span class="fly">◑ fly-brain</span> / beat-saber</h1>
+  <div class="sub">Slice the beats yourself, then watch a connectome-seeded fly brain learn the rhythm (REINFORCE).</div>
 </header>
 <main>
   <section class="stage">
@@ -98,8 +95,7 @@
       <span id="status" class="status"></span>
     </div>
     <div class="hint" id="hint">
-      <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>↑</kbd>/<kbd>↓</kbd> speed · <kbd>R</kbd> restart · <kbd>Esc</kbd> menu
-      <span style="color:var(--dim)">| also A/D, W/S</span>
+      <kbd>A</kbd> left note · <kbd>S</kbd> centre · <kbd>D</kbd> right note (swing on the beat line)
     </div>
   </section>
 
@@ -129,11 +125,10 @@
     <div class="card">
       <h2>Rewards</h2>
       <div style="color:var(--dim); font-size:12px; line-height:1.6">
-        on road <b style="color:var(--good)">+0.02/frame</b> · centred
-        <b style="color:var(--good)">+0.03</b> · checkpoint
-        <b style="color:var(--good)">+1</b> · off road
-        <b style="color:var(--bad)">−0.05</b> · crash
-        <b style="color:var(--bad)">−1</b> &amp; episode ends
+        hit <b style="color:var(--good)">+0.3 · +1 perfect</b> · miss
+        <b style="color:var(--bad)">−0.3</b> · wrong lane
+        <b style="color:var(--bad)">−0.1</b> · off-beat swing
+        <b style="color:var(--bad)">−0.05</b>
       </div>
     </div>
   </aside>
@@ -141,15 +136,15 @@
 
 <div id="start-screen">
   <div class="panel">
-    <h2>Driving Sim</h2>
-    <p>A car on a winding road. Play it yourself with the arrow keys, or hand the
-       wheel to a fly brain whose network is seeded from a curated <i>Drosophila</i>
-       escape/leg-motor connectome — it learns by REINFORCE while you watch.</p>
+    <h2>Beat Saber</h2>
+    <p>Falling notes approach a beat line in 3D. Swing (A/S/D) to slice the note in
+       its lane, on the beat. Then watch a fly brain seeded from a curated
+       <i>Drosophila</i> escape/leg-motor connectome learn the rhythm live.</p>
     <div class="modes">
       <button id="start-human" class="primary">🎮 Human Play</button>
       <button id="start-fly">🧠 Watch the Fly Brain Play</button>
     </div>
-    <div class="muted">network seeded from shared/connectome-data.json (92 neurons / 966 edges)</div>
+    <div class="muted">network seeded from shared/connectome-data.json (92 neurons / 966 edges) · audio: generated metronome, no licensed music</div>
     <div class="muted" id="load-note"></div>
   </div>
 </div>

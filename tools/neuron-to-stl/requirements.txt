@@ -1,0 +1,3 @@
+navis>=1.5
+trimesh>=4.0
+numpy
