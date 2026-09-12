@@ -26,7 +26,7 @@ With no flags, `--stats` is assumed. `--neuron` takes a VFB **short form** ID
 
 ```
 neuron:  FBbt:00003644
-label    giant fiber of成年 brain  (example label from VFB)
+label    giant fiber of adult brain  (example label from VFB)
 connections (12 shown):
   partner                                             weight
   TTMn (tb)                                                84
