@@ -77,6 +77,8 @@
     lastProbs: null,
     lastAction: 0,
     lastHidden: { sensors: [], interneurons: [], motors: [] },
+    rawData: null,     // the connectome JSON actually loaded (for reset())
+    dataSource: null,  // {synthetic, dataset, notes, nNeurons, nEdges, ...}
   };
 
   /* --------------------------------------------------------------- data load */
@@ -233,12 +235,44 @@
     let data;
     try {
       data = await loadConnectome();
+      const m = data.metadata || {};
+      st.dataSource = {
+        synthetic: false,
+        dataset: m.dataset || "connectome-data.json",
+        generatedBy: m.generated_by || "",
+        notes: m.notes || "",
+        nNeurons: Number(m.n_neurons) || data.neurons.length,
+        nEdges: Number(m.n_edges) ||
+          data.neurons.reduce((a, n) => a + (n.connections ? n.connections.length : 0), 0),
+      };
     } catch (e) {
       console.warn("flyBrain: connectome-data not loadable, using synthetic fallback.", e);
       data = synthConnectome(gameConfig);
+      st.dataSource = {
+        synthetic: true,
+        dataset: "synthetic fallback",
+        generatedBy: "fly-brain.js synthConnectome()",
+        notes: "connectome-data.json failed to load — this is NOT the curated dataset.",
+        nNeurons: data.neurons.length,
+        nEdges: data.neurons.reduce((a, n) => a + (n.connections ? n.connections.length : 0), 0),
+      };
     }
+    st.rawData = data;
     st.epSteps = []; st.pendingReward = 0;
     return buildModel(data);
+  }
+
+  /* Wipe all training state (episodes, history, baseline) and rebuild the
+     network from the same loaded connectome + readout seed, so "Reset" in a
+     game honestly restarts learning from the seeded initialization. */
+  function reset() {
+    for (const v of st.vars) v.dispose();
+    if (st.optimizer) st.optimizer.dispose();
+    st.epSteps = []; st.pendingReward = 0;
+    st.baseline = 0; st.lastScore = 0; st.history = []; st.episode = 0;
+    st.lastProbs = null; st.lastAction = 0;
+    st.lastHidden = { sensors: [], interneurons: [], motors: [] };
+    if (st.rawData) buildModel(st.rawData);
   }
 
   /* Sample an action from the policy (train mode) or take argmax (greedy). */
@@ -353,7 +387,7 @@
   }
 
   window.flyBrain = {
-    init, act, reward, endEpisode, getStats, getActivity,
+    init, act, reward, endEpisode, reset, getStats, getActivity,
     getHidden() { return st.lastHidden; },
     /* Debug/persistence: flat copies of every trainable tensor, in
        [W1, W2, W3, b2, b3, W4, b4] order. Used by the test harness to prove
@@ -361,6 +395,9 @@
     getWeights() {
       return st.vars.length ? st.vars.map((v) => Array.from(v.dataSync())) : null;
     },
+    /* What actually loaded at init: the curated dataset or the synthetic
+       fallback. Games surface this in a badge; the harness asserts on it. */
+    getDataSource() { return st.dataSource; },
     getActionProbs() { return st.lastProbs; },
     getLastAction() { return st.config ? st.config.actions[st.lastAction] : null; },
     setMode(m) { st.mode = m === "greedy" ? "greedy" : "train"; },
