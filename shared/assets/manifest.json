@@ -1,0 +1,10 @@
+{
+  "generated_by": "tools/blender-assets/build_models.py",
+  "generated_at": "2026-09-12T14:55:15+00:00",
+  "note": "Deterministic meshes for the game pages; games fall back to primitives if these fail to load. sha256 for reproducibility.",
+  "files": {
+    "car.glb": "80155f02fd9cf30d46282110a61fcac8fe8fd906ac2c716334f146611a90647f",
+    "note-gem.glb": "16a22d2cf656092b26bad74aa8bb7fadfeb65d355cd6f593f14365f9bf6522d5",
+    "fly-rover.glb": "b08e6f135c23614a782903be8a141f8c77ad509efc3a333730dd766d182ec11b"
+  }
+}

@@ -295,6 +295,20 @@
   car.add(body, cabin);
   scene.add(car);
 
+  /* Blender-built car (tools/blender-assets): loads asynchronously and swaps
+     in over the primitive placeholder; the placeholder stays if the asset
+     fails to load (offline etc.). Model units: nose at -Z, ~4 long, so scale
+     to the game's 30-unit car length. */
+  if (typeof flyAssets !== "undefined") {
+    flyAssets.load("car").then((g) => {
+      g.scale.setScalar(7.5);
+      g.position.y = 1;
+      car.add(g);
+      body.visible = false;
+      cabin.visible = false;
+    }).catch((e) => console.warn("car.glb unavailable — using primitives", e));
+  }
+
   /* perceived lane-offset line from car to road centre */
   const laneLine = new THREE.Mesh(
     new THREE.BoxGeometry(1, 0.15, 2.5),
@@ -306,11 +320,20 @@
   /* yaw that points a -Z-forward object along the track tangent */
   function trackYaw(d) { return Math.atan2(-centreXPrime(d), 1); }
 
+  /* crash flash: whole-body material swap works for both the primitive and
+     the Blender mesh (tints the first mesh child). */
+  function setCarColor(hex) {
+    bodyMat.color.set(hex);
+    car.traverse((o) => {
+      if (o.isMesh && o.material && o.material.color) o.material.color.set(hex);
+    });
+  }
+
   function layoutWorld() {
     const cs = carState(sim);
     car.position.set(sim.x, 0, -sim.y);
     car.rotation.y = trackYaw(sim.y) + (sim.lane || 0) * -0.08;
-    bodyMat.color.set(sim.alive ? 0xa371f7 : 0xf85149);
+    setCarColor(sim.alive ? 0xa371f7 : 0xf85149);
 
     ground.position.z = -sim.y;
     grid.position.z = Math.round(-sim.y / 50) * 50;

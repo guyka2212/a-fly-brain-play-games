@@ -304,19 +304,42 @@
   beatLine.position.set(0, 0, 0);
   scene.add(beatLine);
 
-  /* note cubes per lane */
-  const noteGeos = LANES.map((lx, i) => new THREE.BoxGeometry(2.2, 2.2, 2.2));
+  /* note visuals per lane: Blender-built gems (shared/assets/note-gem.glb)
+     with primitive-cube fallback, tinted per lane. Pooled groups so notes
+     spawn/cull without allocations. */
   const noteMats = [
     new THREE.MeshLambertMaterial({ color: 0xd29922 }),   // left  — amber
     new THREE.MeshLambertMaterial({ color: 0xa371f7 }),   // centre— violet
     new THREE.MeshLambertMaterial({ color: 0x3fb950 }),   // right — green
   ];
-  const noteMeshes = [];  // pooled meshes
+  const primitiveGem = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+  const noteProto = new THREE.Group();                       // template
+  primitiveGem.dispose();
+  noteProto.add(new THREE.Mesh(primitiveGem, noteMats[0]));
+  if (typeof flyAssets !== "undefined") {
+    flyAssets.load("note-gem").then((g) => {
+      /* model is ~1.2 units; scale to the 2.2-unit gem footprint */
+      g.scale.setScalar(1.9);
+      noteProto.add(g);
+      noteProto.children[0].visible = false;   // hide the primitive
+      /* retint all pooled gems live */
+      for (const m of noteMeshes) retint(m);
+    }).catch((e) => console.warn("note-gem.glb unavailable — using primitives", e));
+  }
+  function retint(group) {
+    const lane = group.userData.lane ?? 0;
+    group.traverse((o) => {
+      if (o.isMesh && o.material && o.material.color) o.material = noteMats[lane];
+    });
+  }
+  const noteMeshes = [];  // pooled groups
   function noteMesh() {
     for (const m of noteMeshes) if (!m.visible) return m;
-    const m = new THREE.Mesh(noteGeos[0], noteMats[0]);
-    scene.add(m); noteMeshes.push(m);
-    return m;
+    const g = new THREE.Group();
+    const prim = new THREE.Mesh(primitiveGem, noteMats[0]);
+    g.add(prim);
+    scene.add(g); noteMeshes.push(g);
+    return g;
   }
 
   /* saber arm flash: a colored plane in the swung lane */
@@ -379,12 +402,12 @@
       const t = timeToBeatLine(n.beat);           // seconds until beat line
       if (t > SPAWN_LEAD || t < -HIT_WINDOW) continue;
       const z = -t * (APPROACH / SPAWN_LEAD);     // 0 at beat line, -APPROACH at spawn
-      const m = noteMeshes[mi] || noteMesh();
-      m.geometry = noteGeos[n.lane];
-      m.material = noteMats[n.lane];
-      m.position.set(LANES[n.lane], 2.2, z);
-      m.rotation.x = songClock * 1.5;
-      m.visible = true;
+      const g = noteMeshes[mi] || noteMesh();
+      g.userData.lane = n.lane;
+      retint(g);
+      g.position.set(LANES[n.lane], 2.2, z);
+      g.rotation.x = songClock * 1.5;
+      g.visible = true;
       mi++;
     }
     for (let i = mi; i < noteMeshes.length; i++) noteMeshes[i].visible = false;

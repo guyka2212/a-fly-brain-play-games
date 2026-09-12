@@ -207,7 +207,10 @@
     scene.add(m);
   });
 
-  /* agent: a little "fly rover" — body + direction whisker */
+  /* agent: a little "fly rover". Blender-built body (fly-rover.glb, nose at
+     -Z, ~2.5 units) with a primitive sphere+whisker fallback so the page
+     always runs. The whisker stays visible in both cases — it makes heading
+     legible at orbit-camera distance. */
   const agentGroup = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color: 0xa371f7 });
   const body = new THREE.Mesh(new THREE.SphereGeometry(3.2, 20, 14), bodyMat);
@@ -220,6 +223,14 @@
   whisker.position.set(0, 3, -5);
   agentGroup.add(body, whisker);
   scene.add(agentGroup);
+  if (typeof flyAssets !== "undefined") {
+    flyAssets.load("fly-rover").then((g) => {
+      g.scale.setScalar(2.6);
+      g.position.y = 3;
+      agentGroup.add(g);
+      body.visible = false;                    // primitive fallback hidden
+    }).catch((e) => console.warn("fly-rover.glb unavailable — using primitives", e));
+  }
 
   /* orbs (pooled meshes) */
   const orbMat = new THREE.MeshBasicMaterial({ color: 0x3fb950, transparent: true, opacity: 0.85 });
@@ -293,10 +304,17 @@
   scene.add(trail);
   let trailIdx = 0, trailAcc = 0;
 
+  function setAgentColor(hex) {
+    bodyMat.color.set(hex);
+    agentGroup.traverse((o) => {
+      if (o.isMesh && o.material && o.material.color && o !== whisker) o.material.color.set(hex);
+    });
+  }
+
   function layoutScene(t, dt) {
     agentGroup.position.set(agent.x, 0, agent.z);
     agentGroup.rotation.y = agent.h;
-    bodyMat.color.set(agent.bumpT > 0 ? 0xf85149 : 0xa371f7);
+    setAgentColor(agent.bumpT > 0 ? 0xf85149 : 0xa371f7);
     if (agent.bumpT > 0) agent.bumpT -= dt;
 
     for (let i = 0; i < orbs.length; i++) {
