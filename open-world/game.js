@@ -1,12 +1,14 @@
 /* ============================================================================
  * open-world/game.js — three.js foraging sandbox for the fly brain.
  *
- * Modes (start screen or ?mode=human|fly):
- *   Human Play — WASD walks relative to the orbit camera; drag to orbit.
- *   Watch the Fly Brain Play — flyBrain samples turn/forward actions each step
- *   (10 Hz) and learns via REINFORCE: reward for closing distance to the
- *   nearest orb, +1 per orb collected, small exploration bonus, small step
- *   cost. Episode = 45 s, then the world re-seeds.
+ * AI-ONLY: there is no human control mode. The fly brain (shared/fly-brain.js)
+ * forages and learns live via REINFORCE; you watch, fast-forward, and reset.
+ * The camera is still draggable — that's spectating, not control.
+ *
+ * The agent samples turn/forward actions each step (10 Hz) and learns via
+ * REINFORCE: reward for closing distance to the nearest orb, +1 per orb
+ * collected, small exploration bonus, small step cost. Episode = 45 s, then
+ * the world re-seeds.
  *
  * World: 240×240 arena, walls at the edges, 8 orbs per episode, fog + grid for
  * depth. Grid-visit tracking gives the "area explored" signal from the spec.
@@ -22,8 +24,8 @@
 
   /* ============================ game constants ============================ */
   const HALF = 120;            // arena half-size
-  const STEP_TIME = 0.1;       // agent decision period (s) -> 10 Hz
-  const EPISODE_TIME = 45;     // episode length (s)
+  const STEP_TIME = 0.1;       // agent decision period (s) -> 10 Hz of sim time
+  const EPISODE_TIME = 45;     // episode length (s of sim time)
   const N_ORBS = 8;
   const WALK = 26;             // world units/s
   const TURN = 2.6;            // rad/s
@@ -37,14 +39,17 @@
   ];
   const ACTIONS = ["forward", "turnL", "turnR", "forwardLeft", "forwardRight"];
 
-  let mode = null;             // null | 'human' | 'fly'
+  /* Speed multipliers for the simulation clock (1x / 4x / 16x). */
+  const SPEEDS = [1, 4, 16];
+  let speedIdx = 0;
   let started = false, paused = false;
   let brainReady = false;
   let lastProbs = [0.2, 0.2, 0.2, 0.2, 0.2];
   let lastActionName = null;
+  let bestScore = -Infinity;
 
   /* ============================== game state ============================== */
-  let agent, orbs, visited, visitedCount, epClock, collected, humanKeysDown;
+  let agent, orbs, visited, visitedCount, epClock, collected;
   const GRID = 40;             // visitation grid resolution per axis
   const CELL = (HALF * 2) / GRID;
 
@@ -136,11 +141,29 @@
       const pools = await window.flyBrain.init({ features: FEATURES, actions: ACTIONS });
       console.log("fly-brain ready:", pools);
       buildProbRows(); buildNeuronRows();
+      updateBrainBadge();
       brainReady = true;
       return true;
     } catch (e) {
       console.error("fly-brain init failed:", e);
+      const note = document.getElementById("load-note");
+      if (note) note.textContent = "fly brain failed to load — see console.";
       return false;
+    }
+  }
+
+  /* On-screen honest data-source badge, wired from flyBrain.getDataSource(). */
+  function updateBrainBadge() {
+    const el = document.getElementById("brain-badge");
+    if (!el) return;
+    const src = window.flyBrain.getDataSource();
+    if (!src) { el.textContent = "brain: source unknown"; el.className = "badge warn"; return; }
+    if (src.synthetic) {
+      el.textContent = `brain: ⚠ synthetic fallback — connectome-data.json failed to load (${src.nNeurons} neurons)`;
+      el.className = "badge warn";
+    } else {
+      el.textContent = `brain: ${src.dataset} (${src.nNeurons} neurons, ${src.nEdges} edges)`;
+      el.className = "badge ok";
     }
   }
 
@@ -186,7 +209,7 @@
 
   /* agent: a little "fly rover" — body + direction whisker */
   const agentGroup = new THREE.Group();
-  const bodyMat = new THREE.MeshLambertMaterial({ color: 0x58a6ff });
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xa371f7 });
   const body = new THREE.Mesh(new THREE.SphereGeometry(3.2, 20, 14), bodyMat);
   body.scale.set(1, 0.7, 1.3);
   body.position.y = 3;
@@ -219,11 +242,62 @@
     ringMeshes.push(m);
   }
 
-  function layoutScene(t) {
+  /* collect burst: pooled point cloud, spawned where an orb is taken */
+  const BURST_N = 20;
+  const bursts = [];
+  function spawnBurst(x, z) {
+    let b = bursts.find((b) => b.t <= 0);
+    if (!b) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(BURST_N * 3), 3));
+      const mat = new THREE.PointsMaterial({ color: 0x7ee787, size: 2.2, transparent: true, opacity: 1 });
+      const pts = new THREE.Points(geo, mat);
+      pts.visible = false;
+      scene.add(pts);
+      b = { pts, geo, mat, t: 0 };
+      bursts.push(b);
+    }
+    b.t = 0.6;
+    b.mat.color.set(0x7ee787);
+    const p = b.geo.getAttribute("position");
+    b.vel = new Array(BURST_N).fill(0).map(() => {
+      const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 14;
+      return { vx: Math.cos(a) * r, vy: 10 + Math.random() * 12, vz: Math.sin(a) * r };
+    });
+    for (let i = 0; i < BURST_N; i++) p.setXYZ(i, x, 6, z);
+    p.needsUpdate = true;
+  }
+  function layoutBursts(dt) {
+    for (const b of bursts) {
+      if (b.t <= 0) { b.pts.visible = false; continue; }
+      b.t -= dt;
+      b.pts.visible = true;
+      b.mat.opacity = Math.max(0, b.t / 0.6);
+      const p = b.geo.getAttribute("position");
+      for (let i = 0; i < BURST_N; i++) {
+        const v = b.vel[i];
+        p.setXYZ(i, p.getX(i) + v.vx * dt, p.getY(i) + v.vy * dt, p.getZ(i) + v.vz * dt);
+        v.vy -= 30 * dt;
+      }
+      p.needsUpdate = true;
+    }
+  }
+
+  /* trail: breadcrumbs so the foraging path reads at a glance */
+  const TRAIL_N = 60;
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3));
+  const trailMat = new THREE.PointsMaterial({ color: 0xa371f7, size: 1.4, transparent: true, opacity: 0.4 });
+  const trail = new THREE.Points(trailGeo, trailMat);
+  trail.frustumCulled = false;
+  scene.add(trail);
+  let trailIdx = 0, trailAcc = 0;
+
+  function layoutScene(t, dt) {
     agentGroup.position.set(agent.x, 0, agent.z);
     agentGroup.rotation.y = agent.h;
-    bodyMat.color.set(agent.bumpT > 0 ? 0xf85149 : (mode === "fly" ? 0xa371f7 : 0x58a6ff));
-    if (agent.bumpT > 0) agent.bumpT -= 0.016;
+    bodyMat.color.set(agent.bumpT > 0 ? 0xf85149 : 0xa371f7);
+    if (agent.bumpT > 0) agent.bumpT -= dt;
 
     for (let i = 0; i < orbs.length; i++) {
       const o = orbs[i];
@@ -237,9 +311,21 @@
         ringMeshes[i].position.z = o.z;
       }
     }
+
+    /* breadcrumb trail (sim-time spaced) */
+    trailAcc += dt;
+    if (trailAcc > 0.25) {
+      trailAcc = 0;
+      const p = trailGeo.getAttribute("position");
+      p.setXYZ(trailIdx % TRAIL_N, agent.x, 1.2, agent.z);
+      trailIdx++;
+      p.needsUpdate = true;
+    }
+
+    layoutBursts(dt);
   }
 
-  /* orbit camera (drag) + follow */
+  /* orbit camera (drag to spectate) + follow */
   let camYaw = 0, camPitch = 0.55, camDist = 90, dragging = false, lastX = 0, lastY = 0;
   wrap.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
   addEventListener("pointerup", () => { dragging = false; });
@@ -266,28 +352,7 @@
   addEventListener("resize", resize);
   resize();
 
-  /* ================================ input ================================= */
-  const keys = {};
-  addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    keys[k] = true;
-    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
-    if (k === "r" && started) restart();
-    if (k === "escape") toggleMenu();
-  });
-  addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
-
-  function humanStep(dt) {
-    let fwd = (keys["w"] || keys["arrowup"]) ? 1 : 0;
-    let turn = 0;
-    if (keys["a"] || keys["arrowleft"]) turn += 1;
-    if (keys["d"] || keys["arrowright"]) turn -= 1;
-    if (keys["s"] || keys["arrowdown"]) fwd = -0.5;
-    moveAgent(turn, fwd, dt);
-  }
-
   /* ============================ rewards (fly) ============================= */
-  let lastDist = null;
   function flyStep() {
     const st = stateVector();
     const a = window.flyBrain.act(st);
@@ -317,16 +382,39 @@
     if (gotOrb) r += 1;
 
     window.flyBrain.reward(r);
+    if (gotOrb) spawnBurst(agent.x, agent.z);
   }
 
   function endEpisodeIfDue(force) {
     const done = force || epClock >= EPISODE_TIME || collected >= N_ORBS;
     if (done) {
-      if (brainReady && mode === "fly") window.flyBrain.endEpisode();
+      if (brainReady) window.flyBrain.endEpisode();
+      if (brainReady) {
+        const s = window.flyBrain.getStats().lastScore;
+        if (s > bestScore) bestScore = s;
+      }
       resetWorld();
-      lastDist = null;
     }
     return done;
+  }
+
+  /* Honest reset: rebuild the network from the seeded initialization. */
+  function resetBrain() {
+    window.flyBrain.reset();
+    bestScore = -Infinity;
+    resetWorld();
+    const p = trailGeo.getAttribute("position");
+    for (let i = 0; i < TRAIL_N; i++) p.setXYZ(i, 0, -50, 0);
+    p.needsUpdate = true;
+    const el = document.getElementById("status");
+    el.textContent = "Brain reset — training starts from scratch.";
+    drawChart(true);
+  }
+
+  function restart() {
+    if (brainReady && started) window.flyBrain.endEpisode();
+    resetWorld();
+    document.getElementById("status").textContent = "";
   }
 
   /* ================================= HUD ================================== */
@@ -354,12 +442,13 @@
   }
 
   function updateHUD() {
-    const stats = brainReady && mode === "fly" ? window.flyBrain.getStats() : null;
+    const stats = brainReady ? window.flyBrain.getStats() : null;
     const explored = Math.round(100 * visitedCount / (GRID * GRID));
     const rows = [
-      ["mode", mode === "fly" ? "🧠 fly brain" : mode === "human" ? "🎮 human" : "—"],
       ["episode", stats ? stats.episode : "—"],
+      ["last score", stats ? stats.lastScore : "—"],
       ["avg score", stats ? stats.avgScore : "—"],
+      ["best score", bestScore > -Infinity ? bestScore : "—"],
       ["orbs", collected + " / " + N_ORBS],
       ["explored", explored + "%"],
       ["episode time", Math.max(0, Math.ceil(EPISODE_TIME - epClock)) + "s"],
@@ -367,7 +456,7 @@
     document.getElementById("stats").innerHTML =
       rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
 
-    if (brainReady && mode === "fly") {
+    if (brainReady) {
       const probs = lastProbs;
       const best = probs.indexOf(Math.max.apply(null, probs));
       ACTIONS.forEach((a, i) => {
@@ -391,15 +480,15 @@
 
   /* learning-curve chart */
   const chartCv = document.getElementById("chart");
-  function drawChart() {
+  function drawChart(force) {
     if (!chartCv) return;
     const ctx2 = chartCv.getContext("2d");
     const W = chartCv.width, H = chartCv.height;
     ctx2.clearRect(0, 0, W, H);
-    if (!brainReady || mode !== "fly") return;
+    if (!brainReady) return;
     const hist = window.flyBrain.getStats().history;
-    if (!hist.length) return;
-    const show = hist.slice(-120);
+    const show = force ? [] : hist.slice(-120);
+    if (!show.length) return;
     let lo = Math.min(0, Math.min.apply(null, show.map((h) => h.score)));
     let hi = Math.max(1, Math.max.apply(null, show.map((h) => h.score)));
     const pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad;
@@ -420,84 +509,67 @@
     ctx2.stroke();
   }
 
-  /* ============================ mode switch =============================== */
-  const bHuman = document.getElementById("btn-human"), bFly = document.getElementById("btn-fly");
+  /* ============================ playback controls ========================= */
+  const bSpeed = document.getElementById("btn-speed");
+  const bPause = document.getElementById("btn-pause");
+  const bRestart = document.getElementById("btn-restart");
+  const bReset = document.getElementById("btn-reset");
   const startScreen = document.getElementById("start-screen");
   const note = document.getElementById("load-note");
 
-  async function startMode(m) {
-    if (m === "fly") {
-      note.textContent = "loading fly brain…";
-      const ok = await ensureBrain();
-      if (!ok) { note.textContent = "fly brain failed to load — Human Play still works."; return; }
-      window.flyBrain.setMode("train");
-    }
-    if (mode === "fly" && brainReady && started) window.flyBrain.endEpisode();
-    mode = m; started = true; paused = false;
+  async function start() {
+    note.textContent = "loading fly brain…";
+    const ok = await ensureBrain();
+    if (!ok) { note.textContent = "fly brain failed to load — see console."; return; }
+    window.flyBrain.setMode("train");
+    started = true; paused = false;
     resetWorld();
-    lastDist = null;
     startScreen.style.display = "none";
-    bHuman.classList.toggle("on", m === "human");
-    bFly.classList.toggle("on", m === "fly");
-    document.getElementById("hint").style.visibility = m === "human" ? "visible" : "hidden";
-    document.getElementById("status").textContent = m === "fly"
-      ? "The fly is foraging. Episodes are 45s; it learns each one."
-      : "";
     note.textContent = "";
+    document.getElementById("status").textContent =
+      "The fly is foraging. Episodes are 45s of sim time; it learns each one.";
   }
 
-  function toggleMenu() {
-    if (!started) return;
+  bSpeed.onclick = () => {
+    speedIdx = (speedIdx + 1) % SPEEDS.length;
+    bSpeed.textContent = `⏩ ${SPEEDS[speedIdx]}x`;
+    bSpeed.classList.toggle("on", speedIdx > 0);
+  };
+  bPause.onclick = () => {
     paused = !paused;
-    startScreen.style.display = paused ? "flex" : "none";
-    if (paused) note.textContent = "paused — pick a mode to continue";
-  }
-
-  bHuman.onclick = () => startMode("human");
-  bFly.onclick = () => startMode("fly");
-  document.getElementById("btn-restart").onclick = restart;
-  document.getElementById("btn-reset").onclick = () => location.reload();
-  document.getElementById("start-human").onclick = () => startMode("human");
-  document.getElementById("start-fly").onclick = () => startMode("fly");
-
-  const qmode = new URLSearchParams(location.search).get("mode");
-  if (qmode === "fly" || qmode === "ai") startMode("fly");
-  else if (qmode === "human") startMode("human");
-
-  function restart() {
-    if (mode === "fly" && brainReady && started) window.flyBrain.endEpisode();
-    resetWorld();
-    lastDist = null;
-    document.getElementById("status").textContent = "";
-  }
+    bPause.textContent = paused ? "▶ Resume" : "⏸ Pause";
+    bPause.classList.toggle("on", paused);
+  };
+  bRestart.onclick = restart;
+  bReset.onclick = resetBrain;
+  document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
+  /* The agent decides every STEP_TIME of SIMULATED time (10 Hz of sim time,
+     regardless of the speed multiplier) — fast-forward yields more episodes,
+     not a different decision cadence. */
   let lastTs = 0, hudLast = 0, chartLast = 0, stepAcc = 0;
   function frame(ts) {
-    const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
+    const rdt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
     lastTs = ts;
+    const dt = rdt * SPEEDS[speedIdx];
     const t = ts / 1000;
 
     if (started && !paused) {
       epClock += dt;
-      if (mode === "fly" && brainReady) {
-        stepAcc += dt;
-        while (stepAcc >= STEP_TIME) {
-          stepAcc -= STEP_TIME;
-          flyStep();
-        }
-        endEpisodeIfDue(false);
-      } else if (mode === "human") {
-        humanStep(dt);
-        collectCheck();
+      stepAcc += dt;
+      while (stepAcc >= STEP_TIME) {
+        stepAcc -= STEP_TIME;
+        flyStep();
       }
+      endEpisodeIfDue(false);
     }
 
-    layoutScene(t);
+    layoutScene(t, dt);
     updateCamera();
     renderer.render(scene, camera);
     if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
-    if (ts - chartLast > 600) { chartLast = ts; drawChart(); }
+    if (ts - chartLast > 600) { chartLast = ts; drawChart(false); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

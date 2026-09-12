@@ -1,14 +1,23 @@
 /* ============================================================================
  * beat-saber/game.js — three.js beat-slicing game for the fly brain.
  *
- * Modes (start screen or ?mode=human|fly):
- *   Human Play — A/S/D swings the saber in the left/centre/right lane.
- *   Watch the Fly Brain Play — flyBrain samples a policy every frame and learns
- *   via REINFORCE from timing + lane-matching rewards.
+ * AI-ONLY: there is no human control mode. The fly brain (shared/fly-brain.js)
+ * plays and learns live via REINFORCE; you watch, fast-forward, and reset.
  *
  * Notes spawn on a generated metronome (WebAudio, no licensed music): a 110 BPM
  * click plus a bass note every bar. Notes fall toward a beat line; the ideal
  * swing moment is when the note crosses it.
+ *
+ * Reward shaping (tuned so learning is visible within a few dozen episodes —
+ * see tools/fly-brain-test/RESULTS.md): hit +0.4 (+1.0 perfect, within 40% of
+ * the hit window), miss −0.3, wrong-lane swing −0.05, wait = 0. Decisions land
+ * every 0.1s of song time (10 Hz) to keep replay variance low.
+ *
+ * The key learnability fix was feature ENCODING, not reward magnitude: the
+ * sensor model fires on high |sign*gain*x + bias|, so cos-phase features
+ * (signed, sweeping ±1, +1 exactly at the hit moment) make the hit opportunity
+ * visible to the whole sensor population, where urgency/time-to-line kept
+ * most sensors silent and collapsed the policy to a constant distribution.
  * ========================================================================== */
 (function () {
   "use strict";
@@ -26,23 +35,39 @@
   const APPROACH = 14;                   // z units per approach unit
   const LANES = [-4, 0, 4];              // x position of the three lanes
   const HIT_WINDOW = 0.12;               // ±s around the beat line
-  const NOTE_INTERVAL = 1;               // spawn every beat
   const SONG_START_DELAY = 1.0;
+  /* 16-beat songs: shorter episodes => tighter Monte-Carlo returns and 2x the
+     gradient steps per unit experience vs 32 beats (verified in the harness). */
+  const EPISODE_BEATS = 16;
+  /* This game needs a faster optimizer than the default: the per-decision
+     credit signal is small, so 0.04 (vs the shared default 0.02) is what moves
+     the policy within a few hundred episodes (see RESULTS.md). */
+  const LR_GAME = 0.04;
 
   /* ============================ fly-brain wiring ========================== */
+  /* Features are COS PHASES (see ph() in stateVector): signed values sweeping
+     [−1, 1] with +1 exactly at the beat-line crossing. The sensor model fires
+     on high |sign*gain*x + bias|, so (a) the critical moment is the feature
+     MAXIMUM and (b) sensors respond continuously — urgency-in-[0,1] or
+     time-to-line encodings left most sensors permanently silent, which
+     collapsed the policy to a state-independent distribution (the fly could
+     not even see the hit opportunity). */
   const FEATURES = [
-    "tLeft",      // time to beat line for nearest left-lane note (1..0, 1 = far)
-    "tCentre",
-    "tRight",
-    "beatPhase",  // 0..1 position within the current beat
+    "phLeft",     // cos phase of nearest left-lane note (+1 = at beat line)
+    "phCentre",
+    "phRight",
+    "beatPhase",  // cos of the metronome phase (+1 on the beat)
   ];
   const ACTIONS = ["swingL", "swingC", "swingR", "wait"];
 
-  let mode = null;             // null | 'human' | 'fly'
+  /* Speed multipliers for the simulation clock (1x / 4x / 16x). */
+  const SPEEDS = [1, 4, 16];
+  let speedIdx = 0;
   let started = false, paused = false;
   let brainReady = false;
   let lastProbs = [0.25, 0.25, 0.25, 0.25];
   let lastActionName = null;
+  let bestScore = -Infinity;
 
   /* ============================ audio (metronome) ========================= */
   let audioCtx = null, musicTimer = null;
@@ -88,6 +113,8 @@
   let score = 0, streak = 0, bestStreak = 0, hits = 0, misses = 0;
   let swingFlash = null;   // {lane, t}
   let laneNote = [null, null, null];  // nearest unhit note per lane (for features)
+  /* per-lane hit flash for the saber strike effect */
+  let laneFlash = [0, 0, 0];
 
   function resetSong() {
     notes = [];
@@ -95,6 +122,7 @@
     songBeat = 0;
     score = 0; streak = 0; bestStreak = 0; hits = 0; misses = 0;
     swingFlash = null;
+    laneFlash = [0, 0, 0];
   }
 
   function spawnUpTo() {
@@ -120,28 +148,47 @@
       if (t < -HIT_WINDOW || t > SPAWN_LEAD) continue;
       if (laneNote[n.lane] === null || t < timeToBeatLine(laneNote[n.lane].beat)) laneNote[n.lane] = n;
     }
-    const tt = (n) => (n === null ? 1 : Math.max(0, Math.min(1, timeToBeatLine(n.beat) / SPAWN_LEAD)));
+    /* +1 at the line, −1 a full beat away, 0 when nothing is inbound */
+    const ph = (n) => (n === null ? 0 : Math.max(-1, Math.min(1, Math.cos(Math.PI * timeToBeatLine(n.beat) / BEAT))));
     const phase = ((songClock % BEAT) + BEAT) % BEAT / BEAT;
-    return [tt(laneNote[0]), tt(laneNote[1]), tt(laneNote[2]), phase];
+    return [ph(laneNote[0]), ph(laneNote[1]), ph(laneNote[2]), Math.cos(2 * Math.PI * phase)];
   }
 
   async function ensureBrain() {
     if (brainReady) return true;
     if (typeof window.flyBrain === "undefined") return false;
     try {
-      const pools = await window.flyBrain.init({ features: FEATURES, actions: ACTIONS });
+      const pools = await window.flyBrain.init({ features: FEATURES, actions: ACTIONS, learningRate: LR_GAME });
       console.log("fly-brain ready:", pools);
       buildProbRows(); buildNeuronRows();
+      updateBrainBadge();
       brainReady = true;
       return true;
     } catch (e) {
       console.error("fly-brain init failed:", e);
+      const note = document.getElementById("load-note");
+      if (note) note.textContent = "fly brain failed to load — see console.";
       return false;
     }
   }
 
-  /* ================================ actions =============================== */
-  function trySwing(lane, isPerfect) {
+  /* On-screen honest data-source badge, wired from flyBrain.getDataSource(). */
+  function updateBrainBadge() {
+    const el = document.getElementById("brain-badge");
+    if (!el) return;
+    const src = window.flyBrain.getDataSource();
+    if (!src) { el.textContent = "brain: source unknown"; el.className = "badge warn"; return; }
+    if (src.synthetic) {
+      el.textContent = `brain: ⚠ synthetic fallback — connectome-data.json failed to load (${src.nNeurons} neurons)`;
+      el.className = "badge warn";
+    } else {
+      el.textContent = `brain: ${src.dataset} (${src.nNeurons} neurons, ${src.nEdges} edges)`;
+      el.className = "badge ok";
+    }
+  }
+
+  /* ============================== gameplay ================================ */
+  function trySwing(lane) {
     /* find the nearest swingable note in this lane */
     let best = null, bestDt = 1e9;
     for (const n of notes) {
@@ -152,17 +199,19 @@
     }
     const inWindow = best !== null && Math.abs(bestDt) <= HIT_WINDOW;
     if (inWindow) {
-      const perfect = isPerfect === true || Math.abs(bestDt) < 0.05;
+      const perfect = Math.abs(bestDt) < HIT_WINDOW * 0.4;
       best.hit = true;
       hits++; streak++;
       bestStreak = Math.max(bestStreak, streak);
       score += streak * (perfect ? 1 : 0.3);
-      reward(perfect ? 1 : 0.3);
-      flashSwing(lane, true);
+      reward(perfect ? 1 : 0.4);
+      laneFlash[lane] = perfect ? 0.25 : 0.18;   // clean hits flash brighter
+      flashSwing(lane, perfect);
+      spawnBurst(LANES[lane], perfect ? 0x7ee787 : 0x3fb950);
     } else {
       streak = 0;
-      score -= 0.1;
-      reward(-0.1);           // wrong lane / no note to hit
+      score -= 0.05;
+      reward(-0.05);          // wrong lane / no note to hit (mild)
       flashSwing(lane, false);
     }
   }
@@ -178,25 +227,43 @@
     }
   }
 
-  function reward(v) { if (mode === "fly" && brainReady) window.flyBrain.reward(v); }
+  function reward(v) { if (brainReady) window.flyBrain.reward(v); }
 
-  /* Episode = one 32-beat "song". endEpisode on completion (fly mode). */
-  const EPISODE_BEATS = 32;
-  function endSong() {
-    if (mode === "fly" && brainReady) window.flyBrain.endEpisode();
+  /* Is a note hittable RIGHT NOW (any lane)? Used for the wait opportunity
+     cost: holding still while a note is inside the hit window is a small
+     penalty, giving the act-vs-wait contrast a direct gradient. */
+  function hittableNow() {
+    for (const n of notes) {
+      if (n.hit || n.missed) continue;
+      if (Math.abs(timeToBeatLine(n.beat)) <= HIT_WINDOW) return true;
+    }
+    return false;
   }
 
-  /* ============================== input ================================== */
-  const keys = {};
-  addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    keys[k] = true;
-    if (k === "a" && started && !paused && mode === "human") trySwing(0);
-    if (k === "s" && started && !paused && mode === "human") trySwing(1);
-    if (k === "d" && started && !paused && mode === "human") trySwing(2);
-    if (k === "r" && started) restart();
-    if (k === "escape") toggleMenu();
-  });
+  /* Episode = one 32-beat "song". endEpisode on completion. */
+  function endSong() {
+    if (!brainReady) return;
+    window.flyBrain.endEpisode();
+    const s = window.flyBrain.getStats().lastScore;
+    if (s > bestScore) bestScore = s;
+  }
+
+  /* Honest reset: rebuild the network from the seeded initialization. */
+  function resetBrain() {
+    stopMusic();
+    window.flyBrain.reset();
+    bestScore = -Infinity;
+    resetSong();
+    const el = document.getElementById("status");
+    el.textContent = "Brain reset — training starts from scratch.";
+    drawChart(true);
+  }
+
+  function restart() {
+    if (brainReady && started) endSong();
+    resetSong();
+    document.getElementById("status").textContent = "";
+  }
 
   /* ============================== three.js =============================== */
   const wrap = document.getElementById("canvas-wrap");
@@ -262,7 +329,49 @@
     flashMat.color.set(good ? 0x3fb950 : 0xf85149);
   }
 
-  function layoutScene() {
+  /* hit particles: one pooled point cloud per effect, world-positioned */
+  const BURST_N = 18;
+  const bursts = [];       // {pts, geo, mat, t, x, y, z, color}
+  function spawnBurst(x, color) {
+    let b = bursts.find((b) => b.t <= 0);
+    if (!b) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(BURST_N * 3), 3));
+      const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 1 });
+      const pts = new THREE.Points(geo, mat);
+      pts.visible = false;
+      scene.add(pts);
+      b = { pts, geo, mat, t: 0 };
+      bursts.push(b);
+    }
+    b.t = 0.4;
+    b.x = x; b.y = 2.2; b.z = 0;
+    b.mat.color.set(color);
+    const p = b.geo.getAttribute("position");
+    for (let i = 0; i < BURST_N; i++) {
+      p.setXYZ(i, b.x, b.y, b.z + (Math.random() - 0.5) * 0.6);
+    }
+    p.needsUpdate = true;
+    b.vel = new Array(BURST_N).fill(0).map(() => ({
+      vx: (Math.random() - 0.5) * 6, vy: 3 + Math.random() * 4, vz: -2 - Math.random() * 4,
+    }));
+  }
+  function layoutBursts(dt) {
+    for (const b of bursts) {
+      if (b.t <= 0) { b.pts.visible = false; continue; }
+      b.t -= dt;
+      b.pts.visible = true;
+      b.mat.opacity = Math.max(0, b.t / 0.4);
+      const p = b.geo.getAttribute("position");
+      for (let i = 0; i < BURST_N; i++) {
+        const v = b.vel[i];
+        p.setXYZ(i, p.getX(i) + v.vx * dt, p.getY(i) + v.vy * dt, p.getZ(i) + v.vz * dt);
+      }
+      p.needsUpdate = true;
+    }
+  }
+
+  function layoutScene(dt) {
     /* notes */
     let mi = 0;
     for (const n of notes) {
@@ -284,15 +393,18 @@
     const phase = ((songClock % BEAT) + BEAT) % BEAT / BEAT;
     const pulse = Math.max(0, 1 - phase * 3);
     beatLine.material.color.setHex(pulse > 0 ? 0x9cd3ff : 0x58a6ff);
+    beatLine.scale.y = 1 + pulse * 2;
 
     /* swing flash */
     if (swingFlash) {
-      swingFlash.t -= 0.016;
+      swingFlash.t -= dt;
       flashMat.opacity = Math.max(0, swingFlash.t / 0.18) * 0.7;
       flashMesh.position.x = LANES[swingFlash.lane];
       flashMesh.position.z = 0.5;
       if (swingFlash.t <= 0) { swingFlash = null; flashMat.opacity = 0; }
     } else flashMat.opacity = 0;
+
+    layoutBursts(dt);
   }
 
   function resize() {
@@ -329,19 +441,20 @@
   }
 
   function updateHUD() {
-    const stats = brainReady && mode === "fly" ? window.flyBrain.getStats() : null;
+    const stats = brainReady ? window.flyBrain.getStats() : null;
     const rows = [
-      ["mode", mode === "fly" ? "🧠 fly brain" : mode === "human" ? "🎮 human" : "—"],
       ["episode", stats ? stats.episode : "—"],
+      ["last score", stats ? stats.lastScore : "—"],
       ["avg score", stats ? stats.avgScore : "—"],
-      ["score", score.toFixed(1)],
+      ["best score", bestScore > -Infinity ? bestScore : "—"],
+      ["song score", score.toFixed(1)],
       ["hits", hits + " / " + (hits + misses)],
       ["streak", streak + (bestStreak ? " (best " + bestStreak + ")" : "")],
     ];
     document.getElementById("stats").innerHTML =
       rows.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
 
-    if (brainReady && mode === "fly") {
+    if (brainReady) {
       const probs = lastProbs;
       const best = probs.indexOf(Math.max.apply(null, probs));
       ACTIONS.forEach((a, i) => {
@@ -366,15 +479,15 @@
 
   /* learning curve chart */
   const chartCv = document.getElementById("chart");
-  function drawChart() {
+  function drawChart(force) {
     if (!chartCv) return;
     const ctx2 = chartCv.getContext("2d");
     const W = chartCv.width, H = chartCv.height;
     ctx2.clearRect(0, 0, W, H);
-    if (!brainReady || mode !== "fly") return;
+    if (!brainReady) return;
     const hist = window.flyBrain.getStats().history;
-    if (!hist.length) return;
-    const show = hist.slice(-120);
+    const show = force ? [] : hist.slice(-120);
+    if (!show.length) return;
     let lo = Math.min(0, Math.min.apply(null, show.map((h) => h.score)));
     let hi = Math.max(1, Math.max.apply(null, show.map((h) => h.score)));
     const pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad;
@@ -395,73 +508,67 @@
     ctx2.stroke();
   }
 
-  /* ============================ mode switch =============================== */
-  const bHuman = document.getElementById("btn-human"), bFly = document.getElementById("btn-fly");
+  /* ============================ playback controls ========================= */
+  const bSpeed = document.getElementById("btn-speed");
+  const bPause = document.getElementById("btn-pause");
+  const bRestart = document.getElementById("btn-restart");
+  const bReset = document.getElementById("btn-reset");
   const startScreen = document.getElementById("start-screen");
   const note = document.getElementById("load-note");
 
-  async function startMode(m) {
-    if (m === "fly") {
-      note.textContent = "loading fly brain…";
-      const ok = await ensureBrain();
-      if (!ok) { note.textContent = "fly brain failed to load — Human Play still works."; return; }
-      window.flyBrain.setMode("train");
-    }
-    if (mode === "fly" && brainReady && started) endSong();
-    mode = m; started = true; paused = false;
+  async function start() {
+    note.textContent = "loading fly brain…";
+    const ok = await ensureBrain();
+    if (!ok) { note.textContent = "fly brain failed to load — see console."; return; }
+    window.flyBrain.setMode("train");
+    started = true; paused = false;
     resetSong();
     startScreen.style.display = "none";
-    bHuman.classList.toggle("on", m === "human");
-    bFly.classList.toggle("on", m === "fly");
-    document.getElementById("hint").style.visibility = m === "human" ? "visible" : "hidden";
-    document.getElementById("status").textContent = m === "fly"
-      ? "The fly is playing. Episodes are 32 beats; it learns each song."
-      : "";
     note.textContent = "";
+    document.getElementById("status").textContent =
+      "The fly is playing. Episodes are 16 beats; it learns each song.";
     startMusic();
   }
 
-  function toggleMenu() {
-    if (!started) return;
+  bSpeed.onclick = () => {
+    speedIdx = (speedIdx + 1) % SPEEDS.length;
+    bSpeed.textContent = `⏩ ${SPEEDS[speedIdx]}x`;
+    bSpeed.classList.toggle("on", speedIdx > 0);
+  };
+  bPause.onclick = () => {
     paused = !paused;
-    startScreen.style.display = paused ? "flex" : "none";
-    if (paused) note.textContent = "paused — pick a mode to continue";
-  }
-
-  bHuman.onclick = () => startMode("human");
-  bFly.onclick = () => startMode("fly");
-  document.getElementById("btn-restart").onclick = restart;
-  document.getElementById("btn-reset").onclick = () => location.reload();
-  document.getElementById("start-human").onclick = () => startMode("human");
-  document.getElementById("start-fly").onclick = () => startMode("fly");
-
-  const qmode = new URLSearchParams(location.search).get("mode");
-  if (qmode === "fly" || qmode === "ai") startMode("fly");
-  else if (qmode === "human") startMode("human");
-
-  function restart() {
-    if (mode === "fly" && brainReady && started) endSong();
-    resetSong();
-    document.getElementById("status").textContent = "";
-  }
+    bPause.textContent = paused ? "▶ Resume" : "⏸ Pause";
+    bPause.classList.toggle("on", paused);
+    if (paused) stopMusic(); else if (started) startMusic();
+  };
+  bRestart.onclick = restart;
+  bReset.onclick = resetBrain;
+  document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
-  let lastTs = 0, hudLast = 0, chartLast = 0, lastActT = 0;
+  /* Brain acts every 50 ms of SONG time (≤ 20 decisions/s regardless of the
+     speed multiplier), so fast-forward yields more episodes, not a different
+     policy-observation cadence. */
+  let lastTs = 0, hudLast = 0, chartLast = 0, actAcc = 0;
   function frame(ts) {
-    const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
+    const rdt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
     lastTs = ts;
+    const dt = rdt * SPEEDS[speedIdx];
 
     if (started && !paused) {
       songClock += dt;
-      spawnUpTo();      if (mode === "fly" && brainReady && ts - lastActT >= 50) {  // ~20 decisions/s
-        lastActT = ts;
+      spawnUpTo();
+
+      actAcc += dt;
+      while (actAcc >= 0.1) {        // 10 decisions per song-second
+        actAcc -= 0.1;
         const a = window.flyBrain.act(stateVector());
         lastActionName = a;
         lastProbs = window.flyBrain.getActionProbs() || lastProbs;
-        if (a === "swingL") trySwing(0);
+        if (a === "wait") { if (hittableNow()) reward(-0.15); }
+        else if (a === "swingL") trySwing(0);
         else if (a === "swingC") trySwing(1);
         else if (a === "swingR") trySwing(2);
-        /* "wait" = no swing this step */
       }
 
       missNotes();
@@ -475,10 +582,10 @@
       }
     }
 
-    layoutScene();
+    layoutScene(dt);
     renderer.render(scene, camera);
     if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
-    if (ts - chartLast > 600) { chartLast = ts; drawChart(); }
+    if (ts - chartLast > 600) { chartLast = ts; drawChart(false); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

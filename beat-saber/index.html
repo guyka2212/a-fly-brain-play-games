@@ -15,13 +15,16 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
   }
-  header { width: 100%; max-width: 1180px; padding: 14px 16px 4px; }
+  header { width: 100%; max-width: 1380px; padding: 14px 16px 4px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
   h1 .fly { color: var(--accent); }
   .sub { color: var(--dim); font-size: 12px; margin-top: 4px; }
-  main { width: 100%; max-width: 1180px; padding: 8px 16px 24px; display: flex; gap: 16px; flex-wrap: wrap; }
-  .stage { flex: 1 1 700px; min-width: 320px; }
-  .side { flex: 1 1 300px; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--edge); color: var(--dim); }
+  .badge.ok { color: var(--good); border-color: var(--good); }
+  .badge.warn { color: #f0b72f; border-color: #f0b72f; }
+  main { width: 100%; max-width: 1380px; padding: 8px 16px 24px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .stage { flex: 1 1 640px; min-width: 320px; }
+  .side { flex: 1 1 340px; min-width: 300px; display: flex; flex-direction: column; gap: 12px; }
 
   #canvas-wrap { position: relative; width: 100%; aspect-ratio: 3 / 2; background: #0b0e13; border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; }
   #canvas-wrap canvas { display: block; width: 100%; height: 100%; }
@@ -33,7 +36,6 @@
   }
   button:hover { border-color: var(--accent); }
   button.on { border-color: var(--accent); color: var(--accent); }
-  button.primary { border-color: var(--accent); color: var(--accent); }
   button.danger:hover { border-color: var(--bad); color: var(--bad); }
 
   .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; padding: 12px; font-size: 13px; }
@@ -57,7 +59,7 @@
   .neuron.interneuron .fill { background: #a371f7; }
   .neuron.motor .fill { background: var(--good); }
 
-  .chart { width: 100%; height: 120px; display: block; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; }
+  .chart { width: 100%; height: 170px; display: block; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; }
   .legend { color: var(--dim); font-size: 11px; margin-top: 6px; line-height: 1.6; }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
   .status { font-size: 12px; color: var(--dim); min-height: 18px; }
@@ -74,29 +76,29 @@
   }
   #start-screen h2 { margin: 0 0 6px; font-size: 20px; }
   #start-screen p { color: var(--dim); font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
-  #start-screen .modes { display: flex; flex-direction: column; gap: 10px; }
-  #start-screen .modes button { padding: 14px 18px; font-size: 15px; }
+  #start-screen button { padding: 14px 22px; font-size: 15px; }
   #start-screen .muted { font-size: 11px; color: var(--dim); margin-top: 12px; }
 </style>
 </head>
 <body>
 <header>
-  <h1><span class="fly">◑ fly-brain</span> / beat-saber</h1>
-  <div class="sub">Slice the beats yourself, then watch a connectome-seeded fly brain learn the rhythm (REINFORCE).</div>
+  <div>
+    <h1><span class="fly">◑ fly-brain</span> / beat-saber</h1>
+    <div class="sub">Watch a connectome-seeded fly brain learn the rhythm live (REINFORCE). AI-only — no human controls.</div>
+  </div>
+  <div id="brain-badge" class="badge">brain: loading…</div>
 </header>
 <main>
   <section class="stage">
     <div id="canvas-wrap"><canvas id="c"></canvas></div>
     <div class="bar">
-      <button id="btn-human">🎮 Human Play</button>
-      <button id="btn-fly">🧠 Watch the Fly Brain Play</button>
-      <button id="btn-restart">↺ Restart</button>
+      <button id="btn-speed">⏩ 1x</button>
+      <button id="btn-pause">⏸ Pause</button>
+      <button id="btn-restart">↺ Restart Song</button>
       <button id="btn-reset" class="danger">✖ Reset Brain</button>
       <span id="status" class="status"></span>
     </div>
-    <div class="hint" id="hint">
-      <kbd>A</kbd> left note · <kbd>S</kbd> centre · <kbd>D</kbd> right note (swing on the beat line)
-    </div>
+    <div class="hint">The fly brain swings — swingL / swingC / swingR / wait, decided ~10× per song-second. Audio: generated metronome (no licensed music).</div>
   </section>
 
   <aside class="side">
@@ -110,7 +112,7 @@
     </div>
     <div class="card">
       <h2>Learning curve</h2>
-      <canvas id="chart" class="chart" width="320" height="120"></canvas>
+      <canvas id="chart" class="chart" width="340" height="170"></canvas>
       <div class="legend">episode vs score — <span style="color:var(--accent)">line</span> = running average, <span style="color:var(--dim)">dots</span> = episode scores</div>
     </div>
     <div class="card">
@@ -119,16 +121,16 @@
       <div class="legend">
         <span class="dot" style="background:#d29922"></span>sensors (tuned to game features)
         <span class="dot" style="background:#a371f7"></span>interneurons
-        <span class="dot" style="background:#3fb950"></span>motor pool
+        <span class="dot" style="background:var(--good)"></span>motor pool
       </div>
     </div>
     <div class="card">
       <h2>Rewards</h2>
       <div style="color:var(--dim); font-size:12px; line-height:1.6">
-        hit <b style="color:var(--good)">+0.3 · +1 perfect</b> · miss
-        <b style="color:var(--bad)">−0.3</b> · wrong lane
-        <b style="color:var(--bad)">−0.1</b> · off-beat swing
-        <b style="color:var(--bad)">−0.05</b>
+        hit <b style="color:var(--good)">+0.4 · +1 perfect</b> · miss
+        <b style="color:var(--bad)">−0.3</b> · wrong-lane swing
+        <b style="color:var(--bad)">−0.05</b> · wait
+        <b style="color:var(--dim)">0</b>
       </div>
     </div>
   </aside>
@@ -137,14 +139,11 @@
 <div id="start-screen">
   <div class="panel">
     <h2>Beat Saber</h2>
-    <p>Falling notes approach a beat line in 3D. Swing (A/S/D) to slice the note in
-       its lane, on the beat. Then watch a fly brain seeded from a curated
-       <i>Drosophila</i> escape/leg-motor connectome learn the rhythm live.</p>
-    <div class="modes">
-      <button id="start-human" class="primary">🎮 Human Play</button>
-      <button id="start-fly">🧠 Watch the Fly Brain Play</button>
-    </div>
-    <div class="muted">network seeded from shared/connectome-data.json (92 neurons / 966 edges) · audio: generated metronome, no licensed music</div>
+    <p>Falling notes approach a beat line in three lanes, and a fly brain seeded
+       from a curated <i>Drosophila</i> escape/leg-motor connectome learns to
+       slice them on the beat — live, via REINFORCE.</p>
+    <button id="start-fly" class="primary">▶ Watch the Fly Brain Learn</button>
+    <div class="muted">AI-only — no human control mode. · network seeded from shared/connectome-data.json (92 neurons / 966 edges) · audio: generated metronome</div>
     <div class="muted" id="load-note"></div>
   </div>
 </div>

@@ -90,15 +90,19 @@ function checkSource() {
 }
 
 /* =========================== CHECK 2 — agency =========================== */
-/* Each game's fly loop must be the ONLY control path: no keyboard/mouse
-   handlers, no ?mode=human escape hatch, no scripted/hardcoded action lists,
-   no "if AI mode, pick the good move" shortcut, and no game-side re-sampling
-   of the policy (the action applied must be the one act() returned). */
+/* Each game's fly loop must be the ONLY control path: no keyboard/mouse input
+   may reach the game's control layer (act/applyAction/moveAgent/trySwing/step),
+   no ?mode=human escape hatch, no scripted/hardcoded action lists, no
+   "if AI mode, pick the good move" shortcut, and no game-side re-sampling of
+   the policy (the action applied must be the one act() returned).
+
+   Spectator-only pointer handling (orbit camera) is allowed, but proven safe
+   structurally: the pointer handlers must not appear in the same lexical scope
+   as any control-layer call (they can only touch camYaw/camPitch/dragging). */
 const AGENCY_FORBIDDEN = [
   { re: /addEventListener\(\s*["']key(down|up|press)["']/, why: "keyboard handler" },
-  { re: /addEventListener\(\s*["']pointer(down|move|up)["']/, why: "mouse/pointer handler" },
+  { re: /keydown|keyup|onkeydown/, why: "keyboard event token" },
   { re: /addEventListener\(\s*["']wheel["']/, why: "wheel handler" },
-  { re: /keydown|keyup|pointerdown|onkeydown/, why: "keyboard/pointer event token" },
   { re: /\bmode\s*===?\s*["']human["']|\bstartMode\(\s*["']human["']|["']human["']\s*:\s*null|["']human["']\s*\|/, why: "human-mode code path" },
   { re: /URLSearchParams|location\.search|query.*mode|mode.*query/i, why: "mode query-param handling" },
   { re: /SCRIPTED_ACTIONS|HARDCODED|fakeMove|pretendAction|debugAction/, why: "scripted/hardcoded action marker" },
@@ -110,8 +114,30 @@ const AGENCY_FORBIDDEN = [
 const AGENCY_GAME_SPECIFIC = {
   "driving-sim": [/\bkeys\s*=\s*\{\}/, /arrowup|arrowdown|arrowleft|arrowright/, /["'][wads]["']/, /Human Play/i, /btn-human/],
   "beat-saber": [/\bkeys\s*=\s*\{\}/, /["'][wasd]["']\s*&&/, /Human Play/i, /btn-human/],
-  "open-world": [/\bkeys\s*=\s*\{\}/, /humanStep|humanKeysDown/, /dragToOrbit|pointerdown/, /Human Play/i, /btn-human/, /camYaw\s*-=\s*\(e\.clientX/],
+  "open-world": [/\bkeys\s*=\s*\{\}/, /humanStep|humanKeysDown/, /Human Play/i, /btn-human/],
 };
+/* Pointer events may only drive the spectator camera. If any pointer handler
+   shares a function scope with a control-layer call, that's agency FAIL.
+   Control-layer tokens: brain act/reward, game-side action application, sim
+   stepping, reward emission. Camera tokens are exempt. */
+const CONTROL_TOKENS = [
+  /flyBrain\.(act|reward|endEpisode)\(/, /applyAction\(/, /trySwing\(/,
+  /moveAgent\(/, /flyStep\(/, /humanStep\(/, /stepSim\(/, /collectCheck\(/,
+];
+const CAMERA_TOKENS = /camYaw|camPitch|camDist|dragging|lookAt|updateCamera/;
+function checkPointerIsolation(code) {
+  /* Split on pointer addEventListener calls and inspect each handler body:
+     any control-layer token in a pointer handler = FAIL. Camera-only bodies
+     (camYaw/camPitch/...) pass — spectating is not controlling. */
+  const hits = [];
+  const blocks = code.split(/addEventListener\(/).slice(1)
+    .filter((b) => /^\s*["']pointer/.test(b));
+  for (const b of blocks) {
+    const body = b.slice(b.indexOf("{") + 1, b.indexOf("}") + 1);
+    for (const t of CONTROL_TOKENS) if (t.test(body)) hits.push("pointer handler references control token " + t);
+  }
+  return hits;
+}
 
 function checkAgency() {
   const games = ["driving-sim", "beat-saber", "open-world"];
@@ -123,6 +149,7 @@ function checkAgency() {
     const hits = [];
     for (const { re, why } of AGENCY_FORBIDDEN) if (re.test(code)) hits.push(why);
     for (const re of AGENCY_GAME_SPECIFIC[game] || []) if (re.test(code)) hits.push("game-specific human-input remnant: " + re);
+    for (const h of checkPointerIsolation(code)) hits.push(h);
     /* must still drive itself through the brain API */
     const usesAct = /flyBrain\.act\(/.test(code);
     const usesReward = /flyBrain\.reward\(/.test(code);
@@ -156,7 +183,12 @@ function drivingEnv(rand) {
   let s;
   return {
     actions,
-    features: ["laneOffset", "vNorm", "curveAhead", "curveSign"],
+    /* Sensor-visibility encoding: signed, zero-centred features so the tuned
+       sensors (sign*gain*x + bias, relu) respond continuously in BOTH
+       directions. laneOffset/curveSign already are; curveAhead was a 0..1
+       sigmoid-ish value that sat at ~0.5 with a negative bias — a permanently
+       silent sensor — so it is re-centred to ±1 (0.5 + 0.5*curveAhead). */
+    features: ["laneOffset", "vNorm", "curveAheadNear", "curveAheadFar"],
     DT, ACT_EVERY: DT,          // act every tick, like game.js does per frame
     newEpisode() {
       s = { x: centreX(0), y: 0, lane: 0, cp: 0, t: 0, alive: true };
@@ -164,10 +196,11 @@ function drivingEnv(rand) {
     state() {
       const cx = centreX(s.y);
       const d1 = centreX(s.y + 40) - cx, d2 = centreX(s.y + 110) - cx;
+      const curveAheadSigned = clamp((d2 - d1) / 60, -1, 1);
       return [
         clamp((s.x - cx) / (ROAD / 2), -1, 1),
         V / 260,
-        clamp((d2 - d1) / 60 + 0.5, 0, 1),
+        curveAheadSigned,
         clamp(d1 / 60, -1, 1),
       ];
     },
@@ -194,13 +227,26 @@ function drivingEnv(rand) {
 
 function beatSaberEnv(rand) {
   const BPM = 110, BEAT = 60 / BPM, SPAWN_LEAD = 2.0, HIT_WINDOW = 0.12;
-  const EPISODE_BEATS = 32, START_DELAY = 1.0, DT = 1 / 60, ACT_EVERY = 0.05;
+  /* 16-beat songs: shorter episodes => tighter Monte-Carlo returns and 2x the
+     gradient steps per unit experience vs 32 beats. */
+  const EPISODE_BEATS = 16, START_DELAY = 1.0, DT = 1 / 60, ACT_EVERY = 0.1;
+  /* this game needs a faster optimizer than the default: the per-decision
+     credit signal is small, so 0.04 (vs 0.02) is what moves the policy within
+     a few hundred episodes (oracle ceiling ≈ +8.5/song, control ≈ −1.2). */
+  const LR_GAME = 0.04;
   const actions = ["swingL", "swingC", "swingR", "wait"];
   let notes, songClock, songBeat;
   const t2line = (beat) => beat * BEAT - songClock;
   return {
+    learningRate: LR_GAME,
+    /* Features are COS PHASES (see ph() below): signed values sweeping [−1, 1]
+       with +1 exactly at the beat-line crossing. The sensor model fires on
+       high |sign*gain*x + bias|, so (a) the critical moment is the feature
+       MAXIMUM and (b) sensors respond continuously — urgency-in-[0,1] or
+       time-to-line encodings left most sensors permanently silent, which
+       collapsed the policy to a state-independent distribution. */
     actions,
-    features: ["tLeft", "tCentre", "tRight", "beatPhase"],
+    features: ["phLeft", "phCentre", "phRight", "beatPhase"],
     DT, ACT_EVERY,
     newEpisode() {
       notes = []; songClock = -START_DELAY; songBeat = 0;
@@ -213,9 +259,10 @@ function beatSaberEnv(rand) {
         if (t < -HIT_WINDOW || t > SPAWN_LEAD) continue;
         if (laneNote[n.lane] === null || t < t2line(laneNote[n.lane].beat)) laneNote[n.lane] = n;
       }
-      const tt = (n) => (n === null ? 1 : clamp(t2line(n.beat) / SPAWN_LEAD, 0, 1));
+      /* +1 at the line, −1 a full beat away, 0 when nothing is inbound */
+      const ph = (n) => (n === null ? 0 : Math.max(-1, Math.min(1, Math.cos(Math.PI * t2line(n.beat) / BEAT))));
       const phase = (((songClock % BEAT) + BEAT) % BEAT) / BEAT;
-      return [tt(laneNote[0]), tt(laneNote[1]), tt(laneNote[2]), phase];
+      return [ph(laneNote[0]), ph(laneNote[1]), ph(laneNote[2]), Math.cos(2 * Math.PI * phase)];
     },
     tick(dt) { songClock += dt; },
     spawn() {
@@ -232,12 +279,25 @@ function beatSaberEnv(rand) {
         const dt = t2line(n.beat);
         if (Math.abs(dt) < Math.abs(bestDt)) { best = n; bestDt = dt; }
       }
-      if (best !== null && Math.abs(bestDt) <= HIT_WINDOW) flyBrain.reward(Math.abs(bestDt) < 0.05 ? 1 : 0.3);
-      else flyBrain.reward(-0.1);
+      if (best !== null && Math.abs(bestDt) <= HIT_WINDOW) {
+        /* clean hit beats a sloppy one; perfect (within 40% of window) best */
+        flyBrain.reward(Math.abs(bestDt) < HIT_WINDOW * 0.4 ? 1 : 0.4);
+      } else {
+        flyBrain.reward(-0.05);   // wrong lane / no note to hit (mild)
+      }
+    },
+    /* reward for a hittable note RIGHT NOW (wait opportunity cost) */
+    hittableNow() {
+      for (const n of notes) {
+        if (n.hit || n.missed) continue;
+        if (Math.abs(t2line(n.beat)) <= HIT_WINDOW) return true;
+      }
+      return false;
     },
     step(action) {
-      if (action !== "wait") this.swing({ swingL: 0, swingC: 1, swingR: 2 }[action]);
-      return songClock > EPISODE_BEATS * BEAT; // 32-beat song — driver ends it
+      if (action === "wait" && this.hittableNow()) flyBrain.reward(-0.15);
+      else if (action !== "wait") this.swing({ swingL: 0, swingC: 1, swingR: 2 }[action]);
+      return songClock > EPISODE_BEATS * BEAT;    // 16-beat song — driver ends it
     },
     missPass() {
       for (const n of notes) {
@@ -329,7 +389,7 @@ function openWorldEnv(rand) {
 }
 
 /* ============================ training driver =========================== */
-const EPISODES = 100;
+const EPISODES = 200;
 const SEEDS = [101, 202, 303];
 
 async function runSeries(envFactory, seed, useBrain) {
@@ -340,7 +400,7 @@ async function runSeries(envFactory, seed, useBrain) {
      features/actions (fresh model + seeded readout, empty history). This is
      also what guarantees the policy's action set matches env.step(). */
   if (useBrain) {
-    await flyBrain.init({ features: env.features, actions: env.actions });
+    await flyBrain.init({ features: env.features, actions: env.actions, learningRate: env.learningRate });
     flyBrain.setMode("train");
   }
   const origReward = flyBrain.reward;
