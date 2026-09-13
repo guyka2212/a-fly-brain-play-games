@@ -7,9 +7,12 @@ Run headless (see run.sh):
 Models three low-poly, stylized meshes used by the game pages and exports
 each as a self-contained binary .glb (geometry + PBR materials embedded):
 
-    shared/assets/car.glb         driving-sim player car
-    shared/assets/note-gem.glb    beat-saber note cube (with a stem/handle)
-    shared/assets/fly-rover.glb   open-world forager rover (body + wings)
+    shared/assets/car.glb         driving-sim player car (rally body, light
+                                  lenses, tail lights, hubs, skirts, exhausts)
+    shared/assets/note-gem.glb    beat-saber note cube (spikes, collar, inlay,
+                                  base ring — reads from the approach face)
+    shared/assets/fly-rover.glb   open-world forager rover (head, antennae,
+                                  stinger, collar ring, abdomen bands)
 
 Determinism notes
 -----------------
@@ -209,13 +212,6 @@ def merge_parts(parts: list[tuple[bpy.types.Object, Matrix, dict]],
         prims.append(b)
     return prims
 
-    prims = []
-    for name in buckets:                          # dict order = first-use order
-        b = buckets[name]
-        del b["map"]
-        prims.append(b)
-    return prims
-
 
 def export(parts: list[tuple[bpy.types.Object, Matrix, dict]], name: str,
            post: Matrix | None = None) -> None:
@@ -262,6 +258,16 @@ def cone(loc, radius, depth, rot):
     return bpy.context.active_object, compose_matrix(loc, rot, (1, 1, 1))
 
 
+def torus(loc, major_radius, minor_radius, rot=None, segments=24):
+    """Ring (torus) in the XY plane, Z-thin — used for rover collar/bands."""
+    bpy.ops.mesh.primitive_torus_add(major_radius=major_radius,
+                                     minor_radius=minor_radius,
+                                     major_segments=segments,
+                                     minor_segments=segments // 2,
+                                     location=(0, 0, 0))
+    return bpy.context.active_object, compose_matrix(loc, rot, (1, 1, 1))
+
+
 # -------------------------------------------------------------- car model --
 def build_car() -> None:
     reset_scene()
@@ -269,6 +275,8 @@ def build_car() -> None:
     dark = material("car_dark", (0.05, 0.07, 0.09), 0.5, 0.2)
     glass = material("car_glass", (0.15, 0.25, 0.35), 0.15, 0.4)
     trim = material("car_trim", (0.90, 0.93, 0.96), 0.3, 0.6)
+    amber = material("car_light_amber", (1.00, 0.72, 0.18), 0.25, 0.3)
+    red = material("car_light_red", (0.97, 0.15, 0.17), 0.25, 0.3)
 
     parts: list[tuple[bpy.types.Object, Matrix, dict]] = []
     parts.append((*box((0, 0, 0.55), (0.8, 1.5, 0.45)), body))          # hull
@@ -284,14 +292,41 @@ def build_car() -> None:
     for sx in (-0.4, 0.4):                                             # headlights
         parts.append((*sphere((sx, 1.72, 0.55), 0.09, 12, 8), trim))
 
+    # --- new detail (same fixed-order style) ---
+    for sy in (-0.85, 0.95):                                           # wheel hubs
+        for sx in (-0.78, 0.78):
+            parts.append((*cyl((sx, sy, 0.34), 0.14, 0.24,
+                               rot=(0, 3.141592653589793 / 2, 0)), trim))
+    for sx in (-0.4, 0.4):                                             # headlight lenses
+        parts.append((*cyl((sx, 1.78, 0.55), 0.085, 0.12,
+                           rot=(3.141592653589793 / 2, 0, 0)), amber))
+    for sx in (-0.36, 0.36):                                           # tail lights
+        parts.append((*box((sx, -1.68, 0.72), (0.16, 0.05, 0.1)), red))
+    for sx in (-0.9, 0.9):                                             # side skirts
+        parts.append((*box((sx, 0.05, 0.18), (0.06, 2.3, 0.16)), dark))
+    for sx in (-0.34, 0.34):                                           # exhausts
+        parts.append((*cyl((sx, -1.72, 0.28), 0.05, 0.14,
+                           rot=(3.141592653589793 / 2, 0, 0)), trim))
+    for sx in (-0.3, 0.3):                                             # bumper lip
+        parts.append((*box((sx, 1.74, 0.26), (0.3, 0.1, 0.12)), dark))
+    parts.append((*box((0, -0.42, 0.9), (0.3, 0.55, 0.1)), dark))       # roof scoop
+    for sx in (-0.26, 0.26):                                           # windshield wipers
+        parts.append((*box((sx, 0.62, 0.98), (0.03, 0.02, 0.34)), dark))
+    parts.append((*cyl((0, 0.3, 1.38), 0.12, 0.03, vertices=12), trim))  # mirror base
+
     export(parts, "car", post=ROT_X_90)   # model built long on Y -> nose at -Z
 
 
 # -------------------------------------------------------- note-gem model ---
 def build_note_gem() -> None:
+    """Beat note gem: beveled cube body, corner spikes, stem + orb, plus a
+    metal collar, base ring and dark inlay panel on the front face (the face
+    the player sees approaching down the lane)."""
     reset_scene()
     gemm = material("gem_body", (0.65, 0.45, 0.97), 0.25, 0.35)
     stem = material("gem_stem", (0.90, 0.93, 0.96), 0.35, 0.7)
+    collar = material("gem_collar", (0.55, 0.58, 0.62), 0.3, 0.85)
+    dark = material("gem_dark", (0.05, 0.06, 0.08), 0.5, 0.2)
 
     parts: list[tuple[bpy.types.Object, Matrix, dict]] = []
     parts.append((*box((0, 0, 0), (1, 1, 1)), gemm))
@@ -301,15 +336,31 @@ def build_note_gem() -> None:
     parts.append((*cyl((0, 0, 0.72), 0.12, 0.5, vertices=12), stem))
     parts.append((*sphere((0, 0, 1.0), 0.16, 12, 8), gemm))
 
+    # --- new detail ---
+    for sz in (-0.62, 0.62):               # top/bottom spikes (full 4-corner set)
+        parts.append((*cone((0, 0, sz), 0.22, 0.3,
+                            rot=((3.141592653589793 / 2) * (-1 if sz > 0 else 1), 0, 0)), stem))
+    parts.append((*cyl((0, 0, 0.52), 0.16, 0.1, vertices=12), collar))  # stem collar
+    parts.append((*cyl((0, 0, 0.04), 0.3, 0.05, vertices=12), collar))  # front inlay ring
+    parts.append((*box((0, 0, 0.09), (0.36, 0.36, 0.04)), dark))        # inlay panel
+    for sx in (-0.5, 0.5):                 # base ring feet
+        parts.append((*sphere((sx, 0, -0.5), 0.09, 10, 8), stem))
+    for sy in (-0.5, 0.5):
+        parts.append((*sphere((0, sy, -0.5), 0.09, 10, 8), stem))
+
     export(parts, "note-gem")
 
 
 # --------------------------------------------------------- fly-rover model -
 def build_fly_rover() -> None:
+    """Forager rover: ellipsoid thorax, compound eyes, swept wings — plus a
+    separate head sphere with antennae, a stinger, a ring collar and wing
+    stripes. Built long on +Y (nose at −Y), exported nose at −Z."""
     reset_scene()
     body = material("rover_body", (0.64, 0.44, 0.97), 0.4, 0.2)
     wing = material("rover_wing", (0.90, 0.93, 0.96), 0.25, 0.5)
     eye = material("rover_eye", (0.06, 0.66, 0.35), 0.2, 0.3)
+    dark = material("rover_dark", (0.05, 0.06, 0.08), 0.5, 0.2)
 
     parts: list[tuple[bpy.types.Object, Matrix, dict]] = []
     parts.append((*sphere((0, 0, 0), 1, 20, 14, scale=(1, 1.25, 0.8)), body))
@@ -320,6 +371,20 @@ def build_fly_rover() -> None:
         parts.append((*sphere((sx * 1.15, 0.35, 0.45), 1, 16, 10,
                               scale=(0.55, 1.05, 0.08),
                               rot=(0.12 * sx, -0.3, 0.28 * sx)), wing))
+
+    # --- new detail ---
+    parts.append((*sphere((0, -1.35, 0.15), 0.32, 14, 10), body))       # head
+    for sx in (-0.14, 0.14):               # antennae (long thin boxes)
+        parts.append((*box((sx, -1.98, 0.42), (0.035, 0.75, 0.035),
+                           rot=(0.5, 0, -0.25 * sx * 10)), dark))
+    for sx in (-0.3, 0.3):                 # wing stripes (leading edge)
+        parts.append((*box((sx * 1.6, 0.55, 0.5), (0.05, 0.85, 0.03),
+                           rot=(0.1, -0.25, 0.3 * sx)), dark))
+    parts.append((*cone((0, 1.5, 0.15), 0.14, 0.5,
+                        rot=(3.141592653589793 / 2, 0, 0)), dark))      # stinger
+    parts.append((*torus((0, -0.55, 0.1), 0.42, 0.055), dark))          # collar ring
+    for sy in (-0.15, 0.15):               # abdomen bands
+        parts.append((*torus((0, sy, 0.0), 0.88, 0.035), dark))
 
     export(parts, "fly-rover", post=ROT_X_90)   # built long on Y -> nose at -Z
 
