@@ -68,6 +68,7 @@
   let lastProbs = [0.25, 0.25, 0.25, 0.25];
   let lastActionName = null;
   let bestScore = -Infinity;
+  let brainViz = null;
 
   /* ============================ audio (metronome) ========================= */
   let audioCtx = null, musicTimer = null;
@@ -162,6 +163,9 @@
       console.log("fly-brain ready:", pools);
       buildProbRows(); buildNeuronRows();
       updateBrainBadge();
+      if (typeof flyBrainViz !== "undefined") {
+        brainViz = flyBrainViz.create({ container: document.getElementById("brain-panel") });
+      }
       brainReady = true;
       return true;
     } catch (e) {
@@ -252,6 +256,7 @@
   function resetBrain() {
     stopMusic();
     window.flyBrain.reset();
+    if (brainViz) brainViz.rebuild();
     bestScore = -Infinity;
     resetSong();
     const el = document.getElementById("status");
@@ -566,6 +571,11 @@
   };
   bRestart.onclick = restart;
   bReset.onclick = resetBrain;
+  document.getElementById("btn-viz").onclick = (e) => {
+    const on = e.target.textContent === "hide";
+    e.target.textContent = on ? "show" : "hide";
+    if (brainViz) brainViz.setVisible(!on);
+  };
   document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
@@ -607,6 +617,7 @@
 
     layoutScene(dt);
     renderer.render(scene, camera);
+    if (brainViz) { brainViz.update(rdt); brainViz.render(); }
     if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
     if (ts - chartLast > 600) { chartLast = ts; drawChart(false); }
     requestAnimationFrame(frame);

@@ -388,6 +388,55 @@ function openWorldEnv(rand) {
   };
 }
 
+/* =========================== CHECK 4 — brain-viz ======================== */
+/* The 3D brain view must (a) be backed by the same neuron count as the
+   connectome on disk, (b) have a valid finite [x,y,z] pos for every neuron
+   (no missing/NaN coordinates), and (c) be actually wired into every game
+   page with a performant (instanced) renderer. */
+function checkViz() {
+  const lines = [];
+  let ok = true;
+
+  const disk = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+  const neurons = disk.neurons;
+  const missing = neurons.filter((n) => !Array.isArray(n.pos) || n.pos.length !== 3);
+  const nan = neurons.filter((n) => Array.isArray(n.pos) && n.pos.some((v) => !Number.isFinite(v)));
+  lines.push(`connectome: ${neurons.length} neurons, ${missing.length} missing pos, ${nan.length} non-finite pos`);
+  if (missing.length || nan.length) ok = false;
+
+  /* flyBrain.getNeurons() must expose the same count with positions intact */
+  const viaAgent = flyBrain.getNeurons();
+  const agentOk = viaAgent.length === neurons.length &&
+    viaAgent.every((n, i) => Array.isArray(n.pos) && n.pos.length === 3 &&
+      n.pos.every(Number.isFinite));
+  lines.push(`flyBrain.getNeurons(): ${viaAgent.length} neurons, positions intact: ${agentOk ? "yes" : "NO"}`);
+  if (!agentOk) ok = false;
+
+  /* the real init path must have loaded the same neurons (init was called
+     for the source check) */
+  const srcDS = flyBrain.getDataSource();
+  const loadedOk = !srcDS.synthetic && srcDS.nNeurons === neurons.length;
+  lines.push(`agent loaded dataset is the same file: ${loadedOk ? "yes" : "NO"}`);
+  if (!loadedOk) ok = false;
+
+  /* viz component: exists, instanced, and wired into every game */
+  const vizSrc = fs.readFileSync(path.join(ROOT, "shared", "brain-viz.js"), "utf8");
+  const instanced = /InstancedMesh/.test(vizSrc);
+  lines.push(`brain-viz.js uses InstancedMesh (browser budget): ${instanced ? "yes" : "NO"}`);
+  if (!instanced) ok = false;
+
+  for (const game of ["driving-sim", "beat-saber", "open-world"]) {
+    const html = fs.readFileSync(path.join(ROOT, game, "index.html"), "utf8");
+    const js = fs.readFileSync(path.join(ROOT, game, "game.js"), "utf8");
+    const wired = /brain-viz\.js/.test(html) && /id="brain-panel"/.test(html) &&
+      /flyBrainViz\.create\(/.test(js) && /brainViz\.update\(/.test(js);
+    lines.push(`${game}: panel wired ${wired ? "PASS" : "FAIL"}`);
+    if (!wired) ok = false;
+  }
+  if (!ok) lines.push("  !! VIZ CHECK FAILED");
+  return { ok, lines };
+}
+
 /* ============================ training driver =========================== */
 const EPISODES = 200;
 const SEEDS = [101, 202, 303];
@@ -522,6 +571,13 @@ async function main() {
     line("");
   }
 
+  /* 4. brain-viz data + wiring */
+  line("## 4. 3D brain view — positions valid, wiring present");
+  const viz = checkViz();
+  for (const l of viz.lines) line(l);
+  line(`Verdict: ${viz.ok ? "✅ PASS" : "❌ FAIL"}`);
+  line("");
+
   /* summary */
   line("## Summary");
   line("");
@@ -531,16 +587,18 @@ async function main() {
   const agBy = (gname) => (ag.lines.find((l) => l.startsWith(gname + ":")) || "").includes("PASS") ? "✓" : "✗";
   line(`| agency | ${agBy("driving-sim")} | ${agBy("beat-saber")} | ${agBy("open-world")} |`);
   line(`| learning trend | ${learningOk["driving-sim"] ? "✓" : "✗"} | ${learningOk["beat-saber"] ? "✓" : "✗"} | ${learningOk["open-world"] ? "✓" : "✗"} |`);
+  line(`| 3D brain view | ${viz.ok ? "✓" : "✗"} | ${viz.ok ? "✓" : "✗"} | ${viz.ok ? "✓" : "✗"} |`);
   line("");
   line("Notes:");
   line("- The learning check mirrors game dynamics headless (same sensors/rewards/actions as game.js); a real-browser run shows the same curves via the on-page chart.");
   line("- Agency is proven statically (no human/scripted path) plus structurally: the harness applies exactly the action flyBrain.act() returned — the same contract game.js uses.");
   line("- Control arm = identical environment, uniformly random actions, same episode budget: a learning trend must exceed that noise floor, not just itself.");
+  line("- The 3D brain view check validates the DATA (same neuron count as disk, every pos finite) and the per-game wiring; rendering itself needs a browser pass.");
 
   fs.writeFileSync(path.join(__dirname, "RESULTS.md"), out.join("\n") + "\n", "utf8");
   console.log("\nRESULTS.md written to tools/fly-brain-test/RESULTS.md");
 
-  const allOk = regOk && src.ok && ag.ok && Object.values(learningOk).every(Boolean);
+  const allOk = regOk && src.ok && ag.ok && viz.ok && Object.values(learningOk).every(Boolean);
   console.log(allOk ? "\nALL VERIFICATION CHECKS PASSED ✅" : "\nVERIFICATION FAILED ❌");
   if (!allOk) process.exit(1);
 }

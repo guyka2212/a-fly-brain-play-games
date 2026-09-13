@@ -14,6 +14,7 @@ Run:  python build_curated.py
 from __future__ import annotations
 
 import json
+import math
 import random
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +28,18 @@ SENSORS_PER_SLOT = 4         # 2 excitatory + 2 inhibitory-tuned per feature
 N_INTER = 44
 N_MOTOR = 24
 
+# Deterministic, ILLUSTRATIVE spatial layout for the 3D brain view
+# (shared/brain-viz.js). The offline builder has no real mesh/soma geometry,
+# so neurons are laid out in role shells: sensors on the outer shell,
+# interneurons in a mid layer, motor neurons in an inner core — roughly how
+# sensory->motor circuits are organized. metadata.notes says this explicitly;
+# the 3D view must not imply anatomical precision the data doesn't have.
+LAYOUT_SHELL_R = 10.0        # sensor shell radius
+LAYOUT_MID_RXZ = 6.0         # interneuron mid-layer ellipsoid radius (xz)
+LAYOUT_MID_RY = 4.0          # interneuron mid-layer ellipsoid radius (y)
+LAYOUT_CORE_RXZ = 3.2        # motor core ellipsoid radius (xz)
+LAYOUT_CORE_RY = 2.2         # motor core ellipsoid radius (y)
+
 INTER_NAMES = (["GF_L", "GF_R", "PSI2_L", "PSI2_R", "PSI3_L", "PSI3_R",
                 "DNg02_L", "DNg02_R", "DNg04_L", "DNg04_R",
                 "DNp01_L", "DNp01_R", "DNp05_L", "DNp05_R"]
@@ -35,6 +48,43 @@ INTER_NAMES = (["GF_L", "GF_R", "PSI2_L", "PSI2_R", "PSI3_L", "PSI3_R",
 MOTOR_NAMES = (["TTM_L", "TTM_R", "DLM_L", "DLM_R", "PSI1_L", "PSI1_R"]
                + [f"MN{i:02d}_L" for i in range((N_MOTOR - 6) // 2)]
                + [f"MN{i:02d}_R" for i in range((N_MOTOR - 6) // 2)])
+
+
+def sphere_fibonacci(n: int, r: float) -> list[tuple[float, float, float]]:
+    """n points evenly on a sphere shell (Fibonacci lattice). Deterministic."""
+    pts: list[tuple[float, float, float]] = []
+    golden = math.pi * (3.0 - math.sqrt(5.0))
+    for i in range(n):
+        y = 1.0 - (2.0 * i + 1.0) / n           # -1..1, even spacing
+        rr = math.sqrt(max(0.0, 1.0 - y * y))
+        th = golden * i
+        pts.append((r * rr * math.cos(th), r * y, r * rr * math.sin(th)))
+    return pts
+
+
+def ellipsoid_fibonacci(n: int, rxz: float, ry: float) -> list[tuple[float, float, float]]:
+    """n points evenly on an ellipsoid (xz radii rxz, y radius ry)."""
+    out: list[tuple[float, float, float]] = []
+    for x, y, z in sphere_fibonacci(n, 1.0):
+        out.append((x * rxz, y * ry, z * rxz))
+    return out
+
+
+def build_positions(n_sensors: int, n_inter: int, n_motor: int) -> dict[str, list[float]]:
+    """Deterministic role-shell layout (see the LAYOUT_* constants): sensors
+    evenly on the outer shell, interneurons in a mid ellipsoid, motor neurons
+    in an inner core. Same neuron -> same position on every regeneration."""
+    pos: dict[str, list[float]] = {}
+    shell = sphere_fibonacci(n_sensors, LAYOUT_SHELL_R)
+    for i in range(n_sensors):
+        pos[f"sensor{i}"] = [round(c, 3) for c in shell[i]]
+    mid = ellipsoid_fibonacci(n_inter, LAYOUT_MID_RXZ, LAYOUT_MID_RY)
+    for i in range(n_inter):
+        pos[f"inter{i}"] = [round(c, 3) for c in mid[i]]
+    core = ellipsoid_fibonacci(n_motor, LAYOUT_CORE_RXZ, LAYOUT_CORE_RY)
+    for i in range(n_motor):
+        pos[f"motor{i}"] = [round(c, 3) for c in core[i]]
+    return pos
 
 
 def build() -> dict:
@@ -109,6 +159,19 @@ def build() -> dict:
     for n in neurons:
         n["connections"] = sorted(n["connections"], key=lambda c: -abs(c["weight"]))[:18]
 
+    # deterministic illustrative positions (role shells; see metadata.notes)
+    pos_map = build_positions(
+        sum(1 for n in neurons if n["role"] == "sensor"),
+        sum(1 for n in neurons if n["role"] == "interneuron"),
+        sum(1 for n in neurons if n["role"] == "motor"),
+    )
+    counters = {"sensor": 0, "interneuron": 0, "motor": 0}
+    for n in neurons:
+        c = counters[n["role"]]
+        counters[n["role"]] += 1
+        key = "inter" if n["role"] == "interneuron" else n["role"]
+        n["pos"] = pos_map[f"{key}{c}"]
+
     n_neuron = len(neurons)
     n_edges = sum(len(n["connections"]) for n in neurons)
     return {
@@ -121,7 +184,10 @@ def build() -> dict:
                 "Connectome-inspired: real neuron identities and synapse-weight-seeded "
                 "edges, but simplified wiring generated deterministically for browser use. "
                 "fly-brain.js maps each neuron to a hidden node and each weighted edge to an "
-                "initial network weight; it is NOT a literal biological simulation."
+                "initial network weight; it is NOT a literal biological simulation. "
+                "Per-neuron 'pos' is a DETERMINISTIC ILLUSTRATIVE LAYOUT (role shells: "
+                "sensors outer, interneurons mid, motor core), not real anatomical geometry "
+                "— the offline builder has no soma/mesh coordinates."
             ),
             "n_neurons": n_neuron,
             "n_edges": n_edges,

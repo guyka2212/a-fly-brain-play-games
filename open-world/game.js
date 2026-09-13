@@ -47,6 +47,7 @@
   let lastProbs = [0.2, 0.2, 0.2, 0.2, 0.2];
   let lastActionName = null;
   let bestScore = -Infinity;
+  let brainViz = null;
 
   /* ============================== game state ============================== */
   let agent, orbs, visited, visitedCount, epClock, collected;
@@ -142,6 +143,9 @@
       console.log("fly-brain ready:", pools);
       buildProbRows(); buildNeuronRows();
       updateBrainBadge();
+      if (typeof flyBrainViz !== "undefined") {
+        brainViz = flyBrainViz.create({ container: document.getElementById("brain-panel") });
+      }
       brainReady = true;
       return true;
     } catch (e) {
@@ -419,6 +423,7 @@
   /* Honest reset: rebuild the network from the seeded initialization. */
   function resetBrain() {
     window.flyBrain.reset();
+    if (brainViz) brainViz.rebuild();
     bestScore = -Infinity;
     resetWorld();
     const p = trailGeo.getAttribute("position");
@@ -560,6 +565,11 @@
   };
   bRestart.onclick = restart;
   bReset.onclick = resetBrain;
+  document.getElementById("btn-viz").onclick = (e) => {
+    const on = e.target.textContent === "hide";
+    e.target.textContent = on ? "show" : "hide";
+    if (brainViz) brainViz.setVisible(!on);
+  };
   document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
@@ -586,6 +596,7 @@
     layoutScene(t, dt);
     updateCamera();
     renderer.render(scene, camera);
+    if (brainViz) { brainViz.update(rdt); brainViz.render(); }
     if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
     if (ts - chartLast > 600) { chartLast = ts; drawChart(false); }
     requestAnimationFrame(frame);

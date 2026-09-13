@@ -56,6 +56,7 @@
   let lastProbs = [1 / 3, 1 / 3, 1 / 3];
   let lastActionName = null;
   let bestScore = -Infinity;
+  let brainViz = null;
 
   function stateVector(s) {
     const st = carState(s);
@@ -77,6 +78,9 @@
       console.log("fly-brain ready:", pools);
       buildProbRows(); buildNeuronRows();
       updateBrainBadge();
+      if (typeof flyBrainViz !== "undefined") {
+        brainViz = flyBrainViz.create({ container: document.getElementById("brain-panel") });
+      }
       brainReady = true;
       return true;
     } catch (e) {
@@ -156,6 +160,7 @@
      all training history (no page reload needed). */
   function resetBrain() {
     window.flyBrain.reset();
+    if (brainViz) brainViz.rebuild();
     bestScore = -Infinity;
     sim = newSim();
     const el = document.getElementById("status");
@@ -524,6 +529,11 @@
   };
   bRestart.onclick = restart;
   bReset.onclick = resetBrain;
+  document.getElementById("btn-viz").onclick = (e) => {
+    const on = e.target.textContent === "hide";
+    e.target.textContent = on ? "show" : "hide";
+    if (brainViz) brainViz.setVisible(!on);
+  };
   document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
@@ -559,6 +569,7 @@
     layoutWorld();
     if (started && !paused) chaseCamera(); else attractCamera(ts / 1000);
     renderer.render(scene, camera);
+    if (brainViz) { brainViz.update(rdt); brainViz.render(); }
 
     if (ts - hudLast > 200) { hudLast = ts; updateHUD(); }
     if (ts - chartLast > 600) { chartLast = ts; drawChart(false); }

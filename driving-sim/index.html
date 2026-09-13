@@ -60,6 +60,8 @@
   .neuron.motor .fill { background: var(--good); }
 
   .chart { width: 100%; height: 170px; display: block; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; }
+  .brain-panel { width: 100%; height: 240px; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; overflow: hidden; }
+  .brain-panel canvas { display: block; }
   .legend { color: var(--dim); font-size: 11px; margin-top: 6px; line-height: 1.6; }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
   .status { font-size: 12px; color: var(--dim); min-height: 18px; }
@@ -118,6 +120,11 @@
       <div class="legend">episode vs score — <span style="color:#a371f7">line</span> = running average, <span style="color:var(--dim)">dots</span> = episode scores</div>
     </div>
     <div class="card">
+      <h2>Live brain <button id="btn-viz" style="float:right; padding:2px 8px; font-size:11px">hide</button></h2>
+      <div id="brain-panel" class="brain-panel"></div>
+      <div class="legend">one node per neuron at its stored position — <span style="background:#d29922" class="dot"></span>sensors (outer shell) · <span class="dot" style="background:#a371f7"></span>interneurons (mid) · <span class="dot" style="background:var(--good)"></span>motor core · rings = spikes · drag to orbit. Positions are the deterministic illustrative layout, not real anatomy.</div>
+    </div>
+    <div class="card">
       <h2>Who is firing</h2>
       <div class="neurons" id="neurons"></div>
       <div class="legend">
@@ -155,6 +162,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="../shared/fly-brain.js"></script>
+<script src="../shared/brain-viz.js"></script>
 <script src="../shared/assets-loader.js"></script>
 <script src="game.js"></script>
 </body>

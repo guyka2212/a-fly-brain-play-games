@@ -60,6 +60,24 @@ def neuron_id(name: str) -> str:
     return df.iloc[0]["bodyId"]
 
 
+def fetch_soma_position(bid) -> list[float] | None:
+    """Real soma/mesh centroid (x, y, z) in neuropil space, via navis.
+    Used for the 3D brain view: real anatomy when available (the offline
+    builder's role-shell layout is illustrative instead). Returns None on
+    failure so the neuron simply gets no pos (the viz falls back to a
+    deterministic role-shell layout in flyBrain.buildModel)."""
+    try:
+        import navis
+        soma = navis.fetch_soma(bid, client=CLIENT)
+        if soma is None:
+            return None
+        x, y, z = soma
+        return [round(float(x), 1), round(float(y), 1), round(float(z), 1)]
+    except Exception as exc:  # pragma: no cover - depends on dataset quirks
+        print(f"  ! soma lookup failed for body {bid}: {exc}")
+        return None
+
+
 def main() -> None:
     global CLIENT  # noqa: PLW0603
     try:
@@ -95,14 +113,18 @@ def main() -> None:
                 connections.append({"target": target, "weight": round(weight, 4), "count": count})
         connections.sort(key=lambda c: c.get("count", 0), reverse=True)
         connections = connections[:24]  # cap fan-out so the browser model stays small
-        neurons.append({
+        pos = fetch_soma_position(bid)
+        entry = {
             "id": name,
             "name": name,
             "role": role,
             "bias": bias,
             "tuning": tuning,
             "connections": connections,
-        })
+        }
+        if pos is not None:
+            entry["pos"] = pos
+        neurons.append(entry)
         print(f"  + {name}: {bid} -> {len(connections)} targets")
 
     payload = {
@@ -114,6 +136,9 @@ def main() -> None:
                 "Connectome-inspired: real neuron identities and synapse-weight seeded "
                 "edges; simplified wiring. Used to seed the in-browser fly-brain network."
                 " This file is a standalone static asset (no live API calls from GitHub Pages)."
+                " Per-neuron 'pos' (when present) is the real soma/mesh centroid from"
+                " neuPrint+navis in raw neuropil coordinates; neurons without one get a"
+                " deterministic illustrative role-shell layout in the 3D view."
             ),
         },
         "neurons": neurons,

@@ -398,6 +398,16 @@
     /* What actually loaded at init: the curated dataset or the synthetic
        fallback. Games surface this in a badge; the harness asserts on it. */
     getDataSource() { return st.dataSource; },
+    /* Neuron list as loaded (id, name, role, pos, connections) for the 3D
+       brain view. Positions are real soma coordinates when the live fetch
+       produced them, else the deterministic illustrative role-shell layout. */
+    getNeurons() {
+      return st.rawData ? st.rawData.neurons.map((n) => ({
+        id: n.id, name: n.name, role: n.role,
+        pos: Array.isArray(n.pos) ? n.pos.slice() : null,
+        connections: n.connections || [],
+      })) : [];
+    },
     getActionProbs() { return st.lastProbs; },
     getLastAction() { return st.config ? st.config.actions[st.lastAction] : null; },
     setMode(m) { st.mode = m === "greedy" ? "greedy" : "train"; },
