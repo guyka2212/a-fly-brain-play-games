@@ -169,6 +169,11 @@ def merge_parts(parts: list[tuple[bpy.types.Object, Matrix, dict]],
 
     for obj, mw, mat in parts:
         me = obj.data
+        # Blender 4.0 only fills loop.normal after calc_normals_split(); without
+        # it every exported normal was (0, 0, 0) and lit materials rendered
+        # black. 4.1+ computes corner normals automatically (method removed).
+        if hasattr(me, "calc_normals_split"):
+            me.calc_normals_split()
         mwi = mw.inverted().transposed()          # normal matrix
         b = buckets.setdefault(mat["name"], {"mat": mat, "verts": [],
                                              "normals": [], "indices": [],
@@ -180,7 +185,10 @@ def merge_parts(parts: list[tuple[bpy.types.Object, Matrix, dict]],
                 for li in (ls, ls + k, ls + k + 1):
                     loop = me.loops[li]
                     co = mw @ Vector(me.vertices[loop.vertex_index].co)
-                    no = (mwi @ Vector(loop.normal)).normalized()
+                    ln = Vector(loop.normal)
+                    if ln.length < 1e-6:              # never emit a zero normal
+                        ln = Vector(poly.normal)
+                    no = (mwi @ ln).normalized()
                     if post is not None:
                         co = post @ co
                         no = post @ no
@@ -230,7 +238,12 @@ def reset_scene() -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
-ROT_X_90 = Matrix.Rotation(3.141592653589793 / 2, 4, "X")
+# Blender is Z-up, glTF is Y-up: (x, y, z) -> (x, z, -y) is a -90 deg turn
+# about X. (+90 was used originally and shipped both vehicles upside down,
+# the car also facing backwards; the committed GLBs were corrected with the
+# equivalent exact 180-degree sign flips.)
+Z_UP_TO_Y_UP = Matrix.Rotation(-3.141592653589793 / 2, 4, "X")
+ROT_Y_180 = Matrix.Rotation(3.141592653589793, 4, "Y")
 
 
 def box(loc, scale, rot=None):
@@ -314,7 +327,7 @@ def build_car() -> None:
         parts.append((*box((sx, 0.62, 0.98), (0.03, 0.02, 0.34)), dark))
     parts.append((*cyl((0, 0.3, 1.38), 0.12, 0.03, vertices=12), trim))  # mirror base
 
-    export(parts, "car", post=ROT_X_90)   # model built long on Y -> nose at -Z
+    export(parts, "car", post=Z_UP_TO_Y_UP)   # nose +Y (Blender) -> -Z (glTF)
 
 
 # -------------------------------------------------------- note-gem model ---
@@ -386,7 +399,8 @@ def build_fly_rover() -> None:
     for sy in (-0.15, 0.15):               # abdomen bands
         parts.append((*torus((0, sy, 0.0), 0.88, 0.035), dark))
 
-    export(parts, "fly-rover", post=ROT_X_90)   # built long on Y -> nose at -Z
+    # nose -Y (Blender) -> +Z after the up-axis fix, so turn it to face -Z
+    export(parts, "fly-rover", post=ROT_Y_180 @ Z_UP_TO_Y_UP)
 
 
 # -------------------------------------------------------------------- main --

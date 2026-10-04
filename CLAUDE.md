@@ -24,6 +24,13 @@ shared/fly-brain.js            # core agent: connectome-seeded network + REINFOR
                                # (IIFE exposing global `flyBrain`)
 shared/connectome-data.json    # committed static data: 92 neurons / 966 edges.
                                # GENERATED — do not hand-edit.
+shared/scene-fx.js             # cosmetic three.js helpers (global `flyFx`): tone
+                               # mapping, sky dome, env map, glow sprites, noise
+                               # textures, stars. Never touches the brain/sim.
+shared/assets-loader.js        # tiny GLB parser (global `flyAssets`) -> PBR meshes
+shared/assets/*.glb            # Blender-built meshes (tools/blender-assets/)
+shared/brain-viz.js            # 3D "live brain" panel (global `flyBrainViz`)
+shared/thumbs/*.jpg            # hub-page screenshots; retake when a game's look changes
 tools/fly-brain-test/run.js    # headless Node regression harness (npm test)
 tools/fly-brain-test/verify.js # source / agency / learning checks (npm run verify)
                                # -> rewrites tools/fly-brain-test/RESULTS.md
@@ -167,4 +174,19 @@ policy, greedy takes argmax (use for demo/playback).
   caught open-world dying on its first frame. Still do a pass in a real
   GPU browser when one is available.
 - Every game duplicates a small HUD/chart/probs helper block (deliberately —
-  no shared game-side JS by convention). Keep them in sync by hand.
+  no shared game-side JS by convention). Keep them in sync by hand. Purely
+  visual building blocks live in `shared/scene-fx.js` instead.
+- Driving-sim episodes start at the track's steepest bend (`centreXPrime(0)`
+  is the maximum slope, 0.86), so an untrained fly crashes within ~0.2 s and
+  early training looks like constant crashing. The `restart()` comment
+  promises a random road phase per episode that `newSim()` never applies.
+  Fixing it changes the learning environment: update the driving mirror in
+  `verify.js` in the same change.
+- The committed GLBs were produced by a builder that exported all-zero
+  normals and a wrong up-axis rotation. `build_models.py` is fixed, but
+  Blender wasn't available, so the GLBs were corrected in place (exact 180°
+  sign flips; `assets-loader.js` rebuilds flat normals when they're zero).
+  The next real Blender run will regenerate them properly — then update
+  `shared/assets/manifest.json` and retake `shared/thumbs/`.
+- three.js r155+ uses physical light units: light intensities from older
+  three.js code render ~π× darker. Scale intensities, don't fight exposure.

@@ -271,108 +271,264 @@
   }
 
   /* ============================== three.js =============================== */
+  /* Look: neon synthwave stage. Magenta horizon with a striped retro sun, a
+     scrolling neon grid floor, light frames rushing toward the camera on the
+     beat, glowing gems, and a saber that slashes the lane the fly picks.
+     Cosmetic only — nothing here feeds the sim, sensors or rewards. */
   const wrap = document.getElementById("canvas-wrap");
   const canvas = document.getElementById("c");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const fx = window.flyFx;
+  if (fx) fx.setupRenderer(renderer, { exposure: 1.1, shadows: false });
 
+  const LANE_COLORS = [0xff4fa8, 0xb07cff, 0x35e0ff];   // left pink · centre violet · right cyan
+  const SKY = { top: 0x07021c, horizon: 0xc0247a, bottom: 0x05010d, curve: 0.35,
+    sunDir: new THREE.Vector3(0, 0.12, -1), sunColor: 0xff6a3d, sunGlow: 0.5, sunSize: 2 };
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0e13);
-  scene.fog = new THREE.Fog(0x0b0e13, 30, 70);
-
-  const camera = new THREE.PerspectiveCamera(70, 3 / 2, 0.1, 200);
-  camera.position.set(0, 6.5, 11);
-  camera.lookAt(0, 1.5, -6);
-
-  scene.add(new THREE.HemisphereLight(0xbfd4e8, 0x0c0f13, 0.85));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
-  sun.position.set(10, 30, 10);
-  scene.add(sun);
-
-  /* floor grid + lane guides */
-  const grid = new THREE.GridHelper(80, 40, 0x1c2733, 0x141c26);
-  grid.position.y = -0.5;
-  scene.add(grid);
-  const laneGuideMat = new THREE.MeshBasicMaterial({ color: 0x1c2733, transparent: true, opacity: 0.7 });
-  for (const lx of LANES) {
-    const g = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 80), laneGuideMat);
-    g.rotation.x = -Math.PI / 2;
-    g.position.set(lx, -0.45, -28);
-    scene.add(g);
+  scene.background = new THREE.Color(0x07021c);
+  scene.fog = new THREE.Fog(0x1a0628, 26, 110);
+  const sky = fx ? fx.skyDome(Object.assign({ radius: 300 }, SKY)) : null;
+  if (sky) scene.add(sky);
+  if (fx) {
+    const st = fx.stars(700, 280, 0.12);
+    st.material.size = 1.4;
+    scene.add(st);
+    scene.environment = fx.envFromSky(renderer, SKY);
   }
 
-  /* beat line across the lanes */
-  const beatLine = new THREE.Mesh(
-    new THREE.BoxGeometry(13.5, 0.1, 0.3),
-    new THREE.MeshBasicMaterial({ color: 0x58a6ff })
-  );
+  const camera = new THREE.PerspectiveCamera(66, 3 / 2, 0.1, 400);
+  const CAM0 = new THREE.Vector3(0, 6.2, 11.5);
+  camera.position.copy(CAM0);
+  camera.lookAt(0, 2, -8);
+
+  scene.add(new THREE.HemisphereLight(0x8a7cff, 0x2a0830, 1.2));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  key.position.set(6, 14, 12);
+  scene.add(key);
+
+  /* retro sun: striped gradient disc on the horizon (canvas texture) */
+  if (fx) {
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 256;
+    const g = cv.getContext("2d");
+    const grd = g.createLinearGradient(0, 0, 0, 256);
+    grd.addColorStop(0, "#ffe76a"); grd.addColorStop(0.55, "#ff7a3c"); grd.addColorStop(1, "#ff2e88");
+    g.fillStyle = grd;
+    g.beginPath(); g.arc(128, 128, 126, 0, Math.PI * 2); g.fill();
+    g.globalCompositeOperation = "destination-out";
+    for (let i = 0; i < 7; i++) {
+      const y = 140 + i * 17, hgt = 2 + i * 1.6;
+      g.fillRect(0, y, 256, hgt);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sunDisc = new THREE.Mesh(new THREE.PlaneGeometry(90, 90),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, fog: false, depthWrite: false }));
+    sunDisc.position.set(0, 20, -220);
+    sunDisc.renderOrder = -0.5;
+    scene.add(sunDisc);
+    const halo = fx.glowSprite(0xff4f8a, 260, 0.55);
+    halo.material.fog = false;
+    halo.position.set(0, 22, -225);
+    scene.add(halo);
+  }
+
+  /* neon grid floor: procedural lines that scroll toward the camera at the
+     note approach speed, fading into the fog */
+  const gridMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: { scroll: { value: 0 }, pulse: { value: 0 },
+      colA: { value: new THREE.Color(0xff3fa4) }, colB: { value: new THREE.Color(0x35e0ff) } },
+    vertexShader: `
+      varying vec2 vW; varying float vDist;
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xz;
+        vec4 mv = viewMatrix * w;
+        vDist = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      uniform float scroll, pulse; uniform vec3 colA, colB;
+      varying vec2 vW; varying float vDist;
+      float line(float c, float w) {
+        float f = abs(fract(c) - 0.5);
+        float d = fwidth(c);
+        return 1.0 - smoothstep(w - d, w + d, 0.5 - f);
+      }
+      void main() {
+        float lx = line(vW.x / 4.0 + 0.5, 0.03);
+        float lz = line((vW.y - scroll) / 4.0, 0.03);
+        float g = max(lx, lz);
+        float fade = 1.0 - smoothstep(18.0, 120.0, vDist);
+        vec3 c = mix(colB, colA, smoothstep(10.0, 70.0, vDist));
+        vec3 base = vec3(0.02, 0.0, 0.05);
+        gl_FragColor = vec4(base + c * g * (1.1 + pulse * 1.4) * fade, 0.96);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  gridMat.extensions = { derivatives: true };
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(220, 260), gridMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, -0.5, -100);
+  scene.add(floor);
+
+  /* lane strips + glowing rails between and beside the lanes */
+  const laneMats = LANE_COLORS.map((c) => new THREE.MeshBasicMaterial({
+    color: c, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false }));
+  LANES.forEach((lx, i) => {
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 60), laneMats[i]);
+    g.rotation.x = -Math.PI / 2;
+    g.position.set(lx, -0.44, -26);
+    scene.add(g);
+  });
+  const railMat = new THREE.MeshBasicMaterial({ color: 0xc8b8ff });
+  for (const rx of [-6, -2, 2, 6]) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 60), railMat);
+    r.position.set(rx, -0.4, -26);
+    scene.add(r);
+  }
+
+  /* light tunnel: rectangular neon frames that travel toward the camera in
+     step with the beat and flare on each beat */
+  const FRAME_N = 10, FRAME_GAP = 9;
+  const frameMat = new THREE.MeshBasicMaterial({ color: 0xff3fa4, transparent: true, opacity: 0.9,
+    blending: THREE.AdditiveBlending, depthWrite: false });
+  const frameMat2 = frameMat.clone();
+  frameMat2.color.set(0x35e0ff);
+  const frames = [];
+  for (let i = 0; i < FRAME_N; i++) {
+    const f = new THREE.Group();
+    const m = i % 2 ? frameMat2 : frameMat;
+    const W = 17, H = 10, T = 0.14;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(W, T, T), m); top.position.y = H;
+    const l = new THREE.Mesh(new THREE.BoxGeometry(T, H, T), m); l.position.set(-W / 2, H / 2, 0);
+    const r = new THREE.Mesh(new THREE.BoxGeometry(T, H, T), m); r.position.set(W / 2, H / 2, 0);
+    f.add(top, l, r);
+    f.position.y = -0.5;
+    scene.add(f); frames.push(f);
+  }
+
+  /* beat line: emissive bar with a row of halos that pulse on the beat */
+  const beatMat = new THREE.MeshStandardMaterial({ color: 0x1a2a55, emissive: 0x58a6ff, emissiveIntensity: 2 });
+  const beatLine = new THREE.Mesh(new THREE.BoxGeometry(13.5, 0.12, 0.3), beatMat);
   beatLine.position.set(0, 0, 0);
   scene.add(beatLine);
+  const beatGlows = [];
+  if (fx) {
+    for (const x of [-6, -3, 0, 3, 6]) {
+      const g = fx.glowSprite(0x58a6ff, 4, 0.5);
+      g.position.set(x, 0.1, 0);
+      scene.add(g); beatGlows.push(g);
+    }
+  }
 
-  /* note visuals per lane: Blender-built gems (shared/assets/note-gem.glb)
-     with primitive-cube fallback, tinted per lane. Pooled groups so notes
-     spawn/cull without allocations. */
-  const noteMats = [
-    new THREE.MeshLambertMaterial({ color: 0xd29922 }),   // left  — amber
-    new THREE.MeshLambertMaterial({ color: 0xa371f7 }),   // centre— violet
-    new THREE.MeshLambertMaterial({ color: 0x3fb950 }),   // right — green
-  ];
-  const primitiveGem = new THREE.BoxGeometry(2.2, 2.2, 2.2);
-  const noteProto = new THREE.Group();                       // template
-  primitiveGem.dispose();
-  noteProto.add(new THREE.Mesh(primitiveGem, noteMats[0]));
+  /* notes: Blender-built gems (shared/assets/note-gem.glb) with a primitive
+     cube fallback. Only the gem body is tinted per lane (stem/collar keep
+     their metal); each pooled note carries a lane-coloured halo. */
+  const noteMats = LANE_COLORS.map((c) => new THREE.MeshStandardMaterial({
+    color: new THREE.Color(c).multiplyScalar(0.3), emissive: c, emissiveIntensity: 0.9,
+    metalness: 0.1, roughness: 0.3, envMapIntensity: 0.4 }));
+  const primitiveGem = new THREE.BoxGeometry(2.0, 2.0, 2.0);
+  let gemProto = null;
   if (typeof flyAssets !== "undefined") {
     flyAssets.load("note-gem").then((g) => {
-      /* model is ~1.2 units; scale to the 2.2-unit gem footprint */
-      g.scale.setScalar(1.9);
-      noteProto.add(g);
-      noteProto.children[0].visible = false;   // hide the primitive
-      /* retint all pooled gems live */
-      for (const m of noteMeshes) retint(m);
+      g.scale.setScalar(1.9);     // model is ~1.2 units; match the 2.2-unit footprint
+      gemProto = g;
+      for (const m of noteMeshes) attachGem(m);
     }).catch((e) => console.warn("note-gem.glb unavailable — using primitives", e));
   }
-  function retint(group) {
-    const lane = group.userData.lane ?? 0;
-    group.traverse((o) => {
-      if (o.isMesh && o.material && o.material.color) o.material = noteMats[lane];
-    });
+  function attachGem(group) {
+    if (!gemProto || group.userData.gem) return;
+    const g = gemProto.clone();
+    g.traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });
+    group.add(g);
+    group.userData.gem = g;
+    group.userData.prim.visible = false;
+    group.userData.lane = -1;   // force a retint
+  }
+  function retint(group, lane) {
+    if (group.userData.lane === lane) return;
+    group.userData.lane = lane;
+    group.userData.prim.material = noteMats[lane];
+    if (group.userData.gem) {
+      group.userData.gem.traverse((o) => {
+        if (o.isMesh && o.material.name === "gem_body") o.material = noteMats[lane];
+      });
+    }
+    if (group.userData.glow) group.userData.glow.material.color.set(LANE_COLORS[lane]);
   }
   const noteMeshes = [];  // pooled groups
   function noteMesh() {
-    for (const m of noteMeshes) if (!m.visible) return m;
     const g = new THREE.Group();
     const prim = new THREE.Mesh(primitiveGem, noteMats[0]);
     g.add(prim);
+    g.userData.prim = prim;
+    if (fx) {
+      const glow = fx.glowSprite(LANE_COLORS[0], 6.5, 0.5);
+      glow.material.depthTest = false;      // halo sits at the gem centre
+      glow.renderOrder = 2;
+      g.add(glow);
+      g.userData.glow = glow;
+    }
+    attachGem(g);
     scene.add(g); noteMeshes.push(g);
     return g;
   }
 
-  /* saber arm flash: a colored plane in the swung lane */
-  const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-  const flashMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3), flashMat);
-  flashMesh.position.set(0, 2.2, 0.5);
+  /* the saber: handle + glowing blade. It hovers over the last lane and,
+     on a swing, sweeps through that lane leaving a slash arc (green = hit,
+     red = miss). */
+  const saber = new THREE.Group();
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 1.2, 12),
+    new THREE.MeshStandardMaterial({ color: 0x2a2f3a, metalness: 0.9, roughness: 0.25 }));
+  const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 5, 10),
+    new THREE.MeshBasicMaterial({ color: 0xeaf6ff }));
+  blade.position.y = 3.1;
+  const bladeGlowMat = new THREE.MeshBasicMaterial({ color: 0x35e0ff, transparent: true, opacity: 0.45,
+    blending: THREE.AdditiveBlending, depthWrite: false });
+  const bladeGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 5.2, 12), bladeGlowMat);
+  bladeGlow.position.y = 3.1;
+  saber.add(handle, blade, bladeGlow);
+  if (fx) {
+    const tip = fx.glowSprite(0x35e0ff, 3.5, 0.8);
+    tip.position.y = 5.6;
+    saber.add(tip);
+  }
+  saber.position.set(0, 0.6, 2.2);
+  scene.add(saber);
+  let saberX = 0;
+
+  const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0,
+    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+  const flashMesh = new THREE.Mesh(new THREE.RingGeometry(2.2, 3.4, 40, 1, Math.PI * 0.15, Math.PI * 0.7), flashMat);
+  flashMesh.position.set(0, 1.0, 0.6);
   scene.add(flashMesh);
   function flashSwing(lane, good) {
-    swingFlash = { lane, t: 0.18 };
-    flashMat.color.set(good ? 0x3fb950 : 0xf85149);
+    swingFlash = { lane, t: 0.22 };
+    flashMat.color.set(good ? 0x5dff8a : 0xff4a4a);
   }
 
-  /* hit particles: one pooled point cloud per effect, world-positioned */
-  const BURST_N = 18;
-  const bursts = [];       // {pts, geo, mat, t, x, y, z, color}
+  /* hit particles: pooled additive point clouds */
+  const BURST_N = 34;
+  const bursts = [];
   function spawnBurst(x, color) {
     let b = bursts.find((b) => b.t <= 0);
     if (!b) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(BURST_N * 3), 3));
-      const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 1 });
+      const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.9, transparent: true, opacity: 1,
+        map: fx ? fx.glowTexture() : null, blending: THREE.AdditiveBlending, depthWrite: false });
       const pts = new THREE.Points(geo, mat);
       pts.visible = false;
+      pts.frustumCulled = false;
       scene.add(pts);
       b = { pts, geo, mat, t: 0 };
       bursts.push(b);
     }
-    b.t = 0.4;
+    b.t = 0.5;
     b.x = x; b.y = 2.2; b.z = 0;
     b.mat.color.set(color);
     const p = b.geo.getAttribute("position");
@@ -381,7 +537,7 @@
     }
     p.needsUpdate = true;
     b.vel = new Array(BURST_N).fill(0).map(() => ({
-      vx: (Math.random() - 0.5) * 6, vy: 3 + Math.random() * 4, vz: -2 - Math.random() * 4,
+      vx: (Math.random() - 0.5) * 9, vy: 2 + Math.random() * 7, vz: -1 - Math.random() * 6,
     }));
   }
   function layoutBursts(dt) {
@@ -389,17 +545,23 @@
       if (b.t <= 0) { b.pts.visible = false; continue; }
       b.t -= dt;
       b.pts.visible = true;
-      b.mat.opacity = Math.max(0, b.t / 0.4);
+      b.mat.opacity = Math.max(0, b.t / 0.5);
       const p = b.geo.getAttribute("position");
       for (let i = 0; i < BURST_N; i++) {
         const v = b.vel[i];
+        v.vy -= 9 * dt;
         p.setXYZ(i, p.getX(i) + v.vx * dt, p.getY(i) + v.vy * dt, p.getZ(i) + v.vz * dt);
       }
       p.needsUpdate = true;
     }
   }
 
+  let wallClock = 0;
   function layoutScene(dt) {
+    /* effects run on a capped clock so they stay visible at 16x */
+    const vdt = Math.min(dt, 1 / 30);
+    wallClock += vdt;
+
     /* notes */
     let mi = 0;
     for (const n of notes) {
@@ -408,8 +570,7 @@
       if (t > SPAWN_LEAD || t < -HIT_WINDOW) continue;
       const z = -t * (APPROACH / SPAWN_LEAD);     // 0 at beat line, -APPROACH at spawn
       const g = noteMeshes[mi] || noteMesh();
-      g.userData.lane = n.lane;
-      retint(g);
+      retint(g, n.lane);
       g.position.set(LANES[n.lane], 2.2, z);
       g.rotation.x = songClock * 1.5;
       g.visible = true;
@@ -417,22 +578,48 @@
     }
     for (let i = mi; i < noteMeshes.length; i++) noteMeshes[i].visible = false;
 
-    /* beat-line pulse on the beat */
+    /* beat pulse drives the line, the floor and the tunnel */
     const phase = ((songClock % BEAT) + BEAT) % BEAT / BEAT;
     const pulse = Math.max(0, 1 - phase * 3);
-    beatLine.material.color.setHex(pulse > 0 ? 0x9cd3ff : 0x58a6ff);
+    beatMat.emissiveIntensity = 2 + pulse * 5;
     beatLine.scale.y = 1 + pulse * 2;
+    for (const g of beatGlows) { g.material.opacity = 0.35 + pulse * 0.6; g.scale.setScalar(4 + pulse * 3); }
+    gridMat.uniforms.scroll.value = songClock * (APPROACH / SPAWN_LEAD);
+    gridMat.uniforms.pulse.value = pulse;
 
-    /* swing flash */
+    const travel = (songClock / BEAT) * FRAME_GAP * 0.5;
+    for (let i = 0; i < FRAME_N; i++) {
+      let z = -((i * FRAME_GAP - travel) % (FRAME_N * FRAME_GAP));
+      if (z > 0) z -= FRAME_N * FRAME_GAP;
+      frames[i].position.z = z - 6;
+    }
+    frameMat.opacity = frameMat2.opacity = 0.45 + pulse * 0.55;
+
+    /* saber: drift to the last swung lane, sweep on a swing */
     if (swingFlash) {
-      swingFlash.t -= dt;
-      flashMat.opacity = Math.max(0, swingFlash.t / 0.18) * 0.7;
+      swingFlash.t -= vdt;
+      const k = 1 - Math.max(0, swingFlash.t / 0.22);
+      saberX = LANES[swingFlash.lane];
+      saber.position.x += (saberX - saber.position.x) * 0.6;
+      saber.rotation.z = 1.2 - k * 2.4;
+      saber.rotation.x = -0.5 + k * 0.3;
+      flashMat.opacity = Math.max(0, swingFlash.t / 0.22) * 0.85;
       flashMesh.position.x = LANES[swingFlash.lane];
-      flashMesh.position.z = 0.5;
+      flashMesh.rotation.z = -k * 0.6;
       if (swingFlash.t <= 0) { swingFlash = null; flashMat.opacity = 0; }
-    } else flashMat.opacity = 0;
+    } else {
+      flashMat.opacity = 0;
+      saber.position.x += (saberX - saber.position.x) * 0.1;
+      saber.rotation.z += (0.35 + Math.sin(wallClock * 1.7) * 0.08 - saber.rotation.z) * 0.12;
+      saber.rotation.x += (-0.25 - saber.rotation.x) * 0.12;
+    }
+    bladeGlowMat.opacity = 0.35 + pulse * 0.25;
 
-    layoutBursts(dt);
+    /* gentle camera sway on the beat */
+    camera.position.set(CAM0.x + Math.sin(wallClock * 0.4) * 0.6, CAM0.y + pulse * 0.08, CAM0.z);
+    camera.lookAt(0, 2, -8);
+
+    layoutBursts(vdt);
   }
 
   function resize() {

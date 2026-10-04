@@ -170,40 +170,90 @@
   }
 
   /* ============================== three.js ================================ */
+  /* Look: dusk highway. Low sun ahead on a gradient sky, textured grass,
+     painted asphalt with kerbs, roadside trees + reflector posts, a glowing
+     checkpoint arch, car head/tail lights and soft shadows. Cosmetic only —
+     nothing below feeds back into the sim, sensors or rewards. */
   const wrap = document.getElementById("canvas-wrap");
   const canvas = document.getElementById("c");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const fx = window.flyFx;
+  if (fx) fx.setupRenderer(renderer, { exposure: 1.05 });
 
+  const SKY = { top: 0x1b2a6b, horizon: 0xff8e5e, bottom: 0x1a1622, curve: 0.28,
+    sunDir: new THREE.Vector3(0.25, 0.06, -1), sunColor: 0xffb070, sunGlow: 0.9 };
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x10151c);
-  scene.fog = new THREE.Fog(0x10151c, 260, 950);
+  scene.background = new THREE.Color(0x2a2236);
+  scene.fog = new THREE.Fog(0x4a3448, 240, 1150);
+  const sky = fx ? fx.skyDome(Object.assign({ radius: 1500 }, SKY)) : null;
+  if (sky) scene.add(sky);
+  const starField = fx ? fx.stars(500, 1400, 0.3) : null;
+  if (starField) { starField.material.opacity = 0.55; scene.add(starField); }
+  if (fx) scene.environment = fx.envFromSky(renderer, SKY);
 
-  const camera = new THREE.PerspectiveCamera(60, 3 / 2, 0.5, 2200);
+  const camera = new THREE.PerspectiveCamera(58, 3 / 2, 0.5, 3200);
 
-  scene.add(new THREE.HemisphereLight(0xbfd4e8, 0x0c0f13, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.7);
-  sun.position.set(120, 300, 80);
-  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0xa8b8ff, 0x3a2a20, 1.1));
+  /* warm low sun from ahead-right; its shadow box follows the car */
+  const sun = new THREE.DirectionalLight(0xffc08a, 2.6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -140, right: 140, top: 140, bottom: -140, near: 10, far: 900 });
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.6;
+  scene.add(sun, sun.target);
+  /* cool fill from behind the camera so the backlit car still reads */
+  const fill = new THREE.DirectionalLight(0xb8c8ff, 1.3);
+  scene.add(fill, fill.target);
 
-  /* ground + grid that follows the car, so the world reads as infinite */
+  /* deterministic per-slot hash for scenery placement (same every load) */
+  const hash = (k) => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+  /* grass ground that follows the car, snapped to the texture tile so the
+     pattern stays glued to the world instead of sliding with the camera */
+  const TILE = 40;
+  const grassTex = fx ? fx.noiseTexture({ base: 0x31452a, spread: 0.12, size: 256, density: 0.9, repeat: [100, 100], seed: 3 }) : null;
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(4000, 4000),
-    new THREE.MeshLambertMaterial({ color: 0x0b0f14 })
+    new THREE.PlaneGeometry(TILE * 100, TILE * 100),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, map: grassTex, roughness: 0.95 })
   );
+  if (!grassTex) ground.material.color.set(0x23301f);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.2;
+  ground.receiveShadow = true;
   scene.add(ground);
-  const grid = new THREE.GridHelper(3000, 60, 0x1c2733, 0x16202b);
-  scene.add(grid);
 
-  /* road ribbon: two flat strips (shoulder + asphalt), rebuilt as the car
-     advances. Fixed vertex/index counts; only positions update. */
-  const AHEAD = 820, BEHIND = 160, STEP = 10;
+  /* far mountain silhouettes: two layered ridges of unfogged low-poly peaks
+     on a ring around the car (back ridge lighter = aerial perspective) */
+  const mountains = new THREE.Group();
+  const ridges = [
+    { r: 1380, n: 64, h: [70, 210], color: 0x4a3a62 },
+    { r: 1260, n: 52, h: [40, 140], color: 0x2a2542 },
+  ];
+  ridges.forEach((rg, ri) => {
+    const mat = new THREE.MeshBasicMaterial({ color: rg.color, fog: false });
+    for (let i = 0; i < rg.n; i++) {
+      const a = (i / rg.n) * Math.PI * 2 + hash(i * 3.7 + ri) * 0.08;
+      const h = rg.h[0] + hash(i * 1.3 + ri * 17) * (rg.h[1] - rg.h[0]);
+      const m = new THREE.Mesh(new THREE.ConeGeometry(h * (1.6 + hash(i + 9) * 1.4), h, 4 + (i % 3)), mat);
+      m.position.set(Math.cos(a) * rg.r, h / 2 - 14, Math.sin(a) * rg.r);
+      m.rotation.y = hash(i * 5.1) * 6.28;
+      mountains.add(m);
+    }
+  });
+  scene.add(mountains);
+
+  /* road ribbons (shoulder/kerb + asphalt + crash flash), rebuilt as the car
+     advances. Fixed vertex/index counts; positions and UVs update; UV.v is
+     world distance so the painted texture is glued to the road. */
+  const AHEAD = 900, BEHIND = 160, STEP = 10;
   const NSEG = Math.ceil((AHEAD + BEHIND) / STEP);
-  function makeRibbon(halfW, color, y) {
+  const V_PER = 60;                                  // world units per texture repeat
+  function makeRibbon(halfW, mat, y) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array((NSEG + 1) * 6), 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array((NSEG + 1) * 4), 2));
     const nor = new Float32Array((NSEG + 1) * 6);
     for (let i = 0; i <= NSEG; i++) { nor[i * 6 + 1] = 1; nor[i * 6 + 4] = 1; }
     geo.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
@@ -213,92 +263,180 @@
       idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
     }
     geo.setIndex(idx);
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }));
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.position.y = y;
     mesh.frustumCulled = false;
+    mesh.receiveShadow = true;
     mesh.userData.halfW = halfW;
     scene.add(mesh);
     return mesh;
   }
-  const shoulder = makeRibbon(ROAD / 2 + 9, 0x1a2230, -0.06);
-  const asphalt = makeRibbon(ROAD / 2, 0x232d3a, 0);
+  /* asphalt: grain + white edge lines + dashed centre line, painted once */
+  const asphaltTex = fx ? fx.noiseTexture({
+    base: 0x2c2f36, spread: 0.07, size: 256, density: 0.8, seed: 5,
+    draw(g, n) {
+      g.fillStyle = "#e9e4d8";
+      g.fillRect(n * 0.035, 0, n * 0.022, n);
+      g.fillRect(n * (1 - 0.057), 0, n * 0.022, n);
+      g.fillStyle = "#f2c14e";
+      g.fillRect(n * 0.49, 0, n * 0.02, n * 0.55);
+    },
+  }) : null;
+  /* kerb: red/white bands along the road */
+  const kerbTex = fx ? fx.noiseTexture({
+    base: 0xd8d4cc, spread: 0.05, size: 128, density: 0.4, seed: 9,
+    draw(g, n) { g.fillStyle = "#c9302c"; g.fillRect(0, 0, n, n / 4); g.fillRect(0, n / 2, n, n / 4); },
+  }) : null;
+  const shoulder = makeRibbon(ROAD / 2 + 7, new THREE.MeshStandardMaterial({
+    color: kerbTex ? 0xffffff : 0x1a2230, map: kerbTex, roughness: 0.7, side: THREE.DoubleSide }), -0.06);
+  const asphalt = makeRibbon(ROAD / 2, new THREE.MeshStandardMaterial({
+    color: asphaltTex ? 0xffffff : 0x232d3a, map: asphaltTex, roughness: 0.82, metalness: 0.05,
+    side: THREE.DoubleSide }), 0);
+  shoulder.userData.vScale = 0.25;
 
-  /* shoulder flash for near-misses: amber edge strips that light up when the
-     car runs close to the road edge, red on a crash. */
-  const flashRibbon = makeRibbon(ROAD / 2 + 9, 0xf85149, -0.05);
-  flashRibbon.material.transparent = true;
-  flashRibbon.material.opacity = 0;
+  /* shoulder flash for near-misses (amber) and crashes (red) */
+  const flashRibbon = makeRibbon(ROAD / 2 + 9, new THREE.MeshBasicMaterial({
+    color: 0xff5a3c, side: THREE.DoubleSide, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false }), 0.05);
+  flashRibbon.receiveShadow = false;
   let flashT = 0;
 
   function rebuildRibbon(mesh) {
     const posAttr = mesh.geometry.getAttribute("position");
+    const uvAttr = mesh.geometry.getAttribute("uv");
     const d0 = sim.y - BEHIND, hw = mesh.userData.halfW;
+    const vs = mesh.userData.vScale || 1;
     for (let i = 0; i <= NSEG; i++) {
       const d = d0 + i * STEP, cx = centreX(d);
       posAttr.setXYZ(i * 2, cx - hw, 0, -d);
       posAttr.setXYZ(i * 2 + 1, cx + hw, 0, -d);
+      const v = (d / V_PER) * (1 / vs);
+      uvAttr.setXY(i * 2, 0, v);
+      uvAttr.setXY(i * 2 + 1, 1, v);
     }
     posAttr.needsUpdate = true;
+    uvAttr.needsUpdate = true;
   }
 
-  /* centre-line dashes */
-  const dashes = [];
-  const dashGeo = new THREE.BoxGeometry(2.5, 0.1, 16);
-  const dashMat = new THREE.MeshBasicMaterial({ color: 0x4a5a6e });
-  for (let i = 0; i < 16; i++) {
-    const m = new THREE.Mesh(dashGeo, dashMat);
-    scene.add(m); dashes.push(m);
+  /* roadside props: instanced pines + reflector posts, placed per 40-unit
+     slot along the track with a per-slot hash, so they stay put in the
+     world as the window of visible road slides forward */
+  const SLOT = 40, NSLOT = Math.ceil((AHEAD + BEHIND) / SLOT) + 1;
+  const pineGeo = new THREE.ConeGeometry(9, 30, 7);
+  pineGeo.translate(0, 21, 0);
+  const trunkGeo = new THREE.CylinderGeometry(1.4, 1.8, 7, 6);
+  trunkGeo.translate(0, 3.5, 0);
+  const pines = new THREE.InstancedMesh(pineGeo, new THREE.MeshStandardMaterial({ color: 0x2f6b45, roughness: 0.85, flatShading: true }), NSLOT * 4);
+  const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x3b2a1f, roughness: 1 }), NSLOT * 4);
+  pines.castShadow = trunks.castShadow = true;
+  pines.frustumCulled = trunks.frustumCulled = false;
+  scene.add(pines, trunks);
+  const postGeo = new THREE.BoxGeometry(1.2, 6, 1.2);
+  postGeo.translate(0, 3, 0);
+  const posts = new THREE.InstancedMesh(postGeo, new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.6 }), NSLOT * 2);
+  const reflGeo = new THREE.BoxGeometry(1.3, 1.1, 1.3);
+  reflGeo.translate(0, 5.2, 0);
+  const refls = new THREE.InstancedMesh(reflGeo, new THREE.MeshBasicMaterial({ color: 0xffa040 }), NSLOT * 2);
+  posts.castShadow = true;
+  posts.frustumCulled = refls.frustumCulled = false;
+  scene.add(posts, refls);
+  const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
+  function layoutProps() {
+    const k0 = Math.floor((sim.y - BEHIND) / SLOT);
+    let pi = 0, qi = 0;
+    for (let j = 0; j < NSLOT; j++) {
+      const k = k0 + j, d = k * SLOT, cx = centreX(d);
+      for (let side = -1; side <= 1; side += 2) {
+        /* reflector post right on the shoulder */
+        tmpP.set(cx + side * (ROAD / 2 + 11), 0, -d);
+        tmpM.compose(tmpP, tmpQ.identity(), tmpS.set(1, 1, 1));
+        posts.setMatrixAt(qi, tmpM); refls.setMatrixAt(qi, tmpM); qi++;
+        /* two pines per side per slot, scattered back from the road */
+        for (let t = 0; t < 2; t++) {
+          const h = hash(k * 4 + (side + 1) + t * 2);
+          const off = ROAD / 2 + 32 + h * 120 + t * 70;
+          const dz = (hash(k * 9 + t + side) - 0.5) * SLOT;
+          const sc = 0.7 + hash(k * 3 + t - side) * 0.9;
+          tmpP.set(centreX(d + dz) + side * off, 0, -(d + dz));
+          tmpQ.setFromAxisAngle(UP, h * 6.28);
+          tmpM.compose(tmpP, tmpQ, tmpS.set(sc, sc * (0.9 + h * 0.4), sc));
+          pines.setMatrixAt(pi, tmpM); trunks.setMatrixAt(pi, tmpM); pi++;
+        }
+      }
+    }
+    pines.count = trunks.count = pi;
+    posts.count = refls.count = qi;
+    for (const im of [pines, trunks, posts, refls]) im.instanceMatrix.needsUpdate = true;
   }
-  function layoutDashes() {
-    const first = Math.floor((sim.y - BEHIND) / 55) * 55;
-    for (let i = 0; i < dashes.length; i++) {
-      const d = first + i * 55;
-      dashes[i].position.set(centreX(d), 0.05, -d);
-      dashes[i].rotation.y = Math.atan2(centreXPrime(d), -1);
+
+  /* next-checkpoint arch: emissive green pylons + banner, with glow halos */
+  const gateMat = new THREE.MeshStandardMaterial({ color: 0x1d6b33, emissive: 0x3fb950, emissiveIntensity: 1.4, roughness: 0.4 });
+  const gate = new THREE.Group();
+  const pL = new THREE.Mesh(new THREE.BoxGeometry(4, 26, 4), gateMat);
+  const pR = new THREE.Mesh(new THREE.BoxGeometry(4, 26, 4), gateMat);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 1.5), gateMat);
+  pL.position.set(-ROAD / 2 - 2, 13, 0);
+  pR.position.set(ROAD / 2 + 2, 13, 0);
+  bar.scale.set(ROAD + 8, 1, 1);
+  bar.position.set(0, 25, 0);
+  pL.castShadow = pR.castShadow = bar.castShadow = true;
+  gate.add(pL, pR, bar);
+  const gateGlows = [];
+  if (fx) {
+    for (const x of [-ROAD / 2 - 2, 0, ROAD / 2 + 2]) {
+      const g = fx.glowSprite(0x5dff8a, x === 0 ? 70 : 34, 0.55);
+      g.position.set(x, 26, 0);
+      gate.add(g); gateGlows.push(g);
     }
   }
-
-  /* next-checkpoint gate */
-  const gateMat = new THREE.MeshBasicMaterial({ color: 0x3fb950 });
-  const gate = new THREE.Group();
-  const pL = new THREE.Mesh(new THREE.BoxGeometry(4, 22, 4), gateMat);
-  const pR = new THREE.Mesh(new THREE.BoxGeometry(4, 22, 4), gateMat);
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(1, 2.5, 1), gateMat);
-  pL.position.set(-ROAD / 2, 11, 0);
-  pR.position.set(ROAD / 2, 11, 0);
-  bar.scale.set(ROAD + 4, 1, 1);
-  bar.position.set(0, 21, 0);
-  gate.add(pL, pR, bar);
   scene.add(gate);
 
-  /* checkpoint pulse: the gate flashes green and a brief particle burst when
-     a checkpoint is crossed. */
+  /* checkpoint pulse: gate flares and a glowing particle burst */
   let gatePulse = 0;
   const burstGeo = new THREE.BufferGeometry();
-  const BURST_N = 26;
+  const BURST_N = 40;
   burstGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(BURST_N * 3), 3));
-  const burstMat = new THREE.PointsMaterial({ color: 0x3fb950, size: 3.2, transparent: true, opacity: 0.9 });
+  const burstMat = new THREE.PointsMaterial({ color: 0x7dff9e, size: 5, transparent: true, opacity: 0.9,
+    map: fx ? fx.glowTexture() : null, blending: THREE.AdditiveBlending, depthWrite: false });
   const burst = new THREE.Points(burstGeo, burstMat);
   burst.visible = false;
+  burst.frustumCulled = false;
   scene.add(burst);
   let burstT = 0;
   const burstVel = new Array(BURST_N).fill(0).map(() => {
-    const a = Math.random() * Math.PI * 2, r = 24 + Math.random() * 30;
-    return { vx: Math.cos(a) * r, vz: Math.sin(a) * r, vy: 30 + Math.random() * 26 };
+    const a = Math.random() * Math.PI * 2, r = 24 + Math.random() * 40;
+    return { vx: Math.cos(a) * r, vz: Math.sin(a) * r, vy: 30 + Math.random() * 36 };
   });
 
-  /* the car */
+  /* the car (primitive placeholder until car.glb loads) */
   const car = new THREE.Group();
-  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xa371f7 });
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xa371f7, metalness: 0.3, roughness: 0.35 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(16, 7, 30), bodyMat);
   body.position.y = 6;
   const cabin = new THREE.Mesh(
     new THREE.BoxGeometry(10, 5, 13),
-    new THREE.MeshLambertMaterial({ color: 0x0d1117 })
+    new THREE.MeshStandardMaterial({ color: 0x0d1117, metalness: 0.5, roughness: 0.15 })
   );
   cabin.position.set(0, 11.5, -2);
+  body.castShadow = cabin.castShadow = true;
   car.add(body, cabin);
   scene.add(car);
+  /* body-paint materials the crash tint may recolour (never glass/trim/lights) */
+  const paintMats = [bodyMat];
+
+  /* head + tail lights: glow halos plus one forward spotlight on the road */
+  const lampGlows = [];
+  if (fx) {
+    for (const x of [-5.5, 5.5]) {
+      const h = fx.glowSprite(0xfff1c8, 16, 0.9); h.position.set(x, 6, -16); car.add(h); lampGlows.push(h);
+      const t = fx.glowSprite(0xff3030, 4.5, 0.6); t.position.set(x * 0.6, 5.5, 14); car.add(t);
+    }
+  }
+  const headlight = new THREE.SpotLight(0xfff1d0, 900, 260, 0.42, 0.6, 1.6);
+  headlight.position.set(0, 8, -12);
+  headlight.target.position.set(0, 0, -120);
+  car.add(headlight, headlight.target);
 
   /* Blender-built car (tools/blender-assets): loads asynchronously and swaps
      in over the primitive placeholder; the placeholder stays if the asset
@@ -307,60 +445,83 @@
   if (typeof flyAssets !== "undefined") {
     flyAssets.load("car").then((g) => {
       g.scale.setScalar(7.5);
-      g.position.y = 1;
+      g.position.y = 0;
       car.add(g);
       body.visible = false;
       cabin.visible = false;
+      g.traverse((o) => { if (o.isMesh && o.material.name === "car_body") paintMats.push(o.material); });
     }).catch((e) => console.warn("car.glb unavailable — using primitives", e));
+  }
+
+  /* soft contact shadow blob under the car (reads even outside the sun box) */
+  let carBlob = null;
+  if (fx) {
+    carBlob = new THREE.Mesh(new THREE.PlaneGeometry(30, 44), new THREE.MeshBasicMaterial({
+      map: fx.glowTexture(), color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false }));
+    carBlob.rotation.x = -Math.PI / 2;
+    carBlob.position.y = 0.12;
+    car.add(carBlob);
   }
 
   /* perceived lane-offset line from car to road centre */
   const laneLine = new THREE.Mesh(
     new THREE.BoxGeometry(1, 0.15, 2.5),
-    new THREE.MeshBasicMaterial({ color: 0xa371f7, transparent: true, opacity: 0.55 })
+    new THREE.MeshBasicMaterial({ color: 0xc8a8ff, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false })
   );
-  laneLine.position.y = 0.15;
+  laneLine.position.y = 0.3;
   scene.add(laneLine);
 
   /* yaw that points a -Z-forward object along the track tangent */
   function trackYaw(d) { return Math.atan2(-centreXPrime(d), 1); }
 
-  /* crash flash: whole-body material swap works for both the primitive and
-     the Blender mesh (tints the first mesh child). */
-  function setCarColor(hex) {
-    bodyMat.color.set(hex);
-    car.traverse((o) => {
-      if (o.isMesh && o.material && o.material.color) o.material.color.set(hex);
-    });
+  /* crash flash: tints only the body paint (glass, trim and lights keep
+     their own materials) */
+  const PAINT = new THREE.Color(0xa371f7), CRASH = new THREE.Color(0xf85149);
+  function setCarColor(crashed) {
+    for (const m of paintMats) m.color.copy(crashed ? CRASH : PAINT);
   }
 
   function layoutWorld() {
     const cs = carState(sim);
     car.position.set(sim.x, 0, -sim.y);
     car.rotation.y = trackYaw(sim.y) + (sim.lane || 0) * -0.08;
-    setCarColor(sim.alive ? 0xa371f7 : 0xf85149);
+    car.rotation.z = (sim.lane || 0) * 0.03;
+    setCarColor(!sim.alive);
 
-    ground.position.z = -sim.y;
-    grid.position.z = Math.round(-sim.y / 50) * 50;
+    /* world-anchored ground; sky, stars, mountains and sun ride with the car */
+    ground.position.set(Math.round(sim.x / TILE) * TILE, -0.2, Math.round(-sim.y / TILE) * TILE);
+    if (sky) sky.position.set(sim.x, 0, -sim.y);
+    if (starField) starField.position.set(sim.x, 0, -sim.y);
+    mountains.position.set(sim.x, 0, -sim.y);
+    sun.position.set(sim.x + 160, 260, -sim.y - 420);
+    sun.target.position.set(sim.x, 0, -sim.y - 60);
+    fill.position.set(sim.x - 40, 120, -sim.y + 200);
+    fill.target.position.set(sim.x, 0, -sim.y);
 
     rebuildRibbon(shoulder);
     rebuildRibbon(asphalt);
     rebuildRibbon(flashRibbon);
-    layoutDashes();
+    layoutProps();
 
     const dcp = (sim.checkpoint + 1) * 600;
     gate.position.set(centreX(dcp), 0, -dcp);
     gate.rotation.y = trackYaw(dcp);
-    const gm = 1 + Math.max(0, gatePulse) * 0.5;
+    const gm = 1 + Math.max(0, gatePulse) * 0.35;
     gate.scale.set(gm, gm, 1);
-    gateMat.color.set(gatePulse > 0 ? 0x7ee787 : 0x3fb950);
+    gateMat.emissiveIntensity = 1.4 + Math.max(0, gatePulse) * 4;
+    for (const g of gateGlows) g.material.opacity = 0.5 + Math.max(0, gatePulse) * 0.5;
     if (gatePulse > 0) gatePulse -= 0.05;
 
     /* near-miss / crash shoulder flash */
     if (flashT > 0) {
       flashT -= 0.06;
-      flashRibbon.material.opacity = Math.max(0, flashT) * 0.55;
+      flashRibbon.material.opacity = Math.max(0, flashT) * 0.6;
     } else flashRibbon.material.opacity = 0;
+    flashRibbon.visible = flashRibbon.material.opacity > 0.01;
+
+    for (const g of lampGlows) g.material.opacity = sim.alive ? 0.9 : 0.25;
+    headlight.intensity = sim.alive ? 900 : 120;
 
     laneLine.visible = brainReady && sim.alive;
     if (laneLine.visible) {
@@ -379,21 +540,33 @@
         const v = burstVel[i];
         p.setXYZ(i,
           gate.position.x + v.vx * (1 - burstT),
-          4 + v.vy * (1 - burstT) - 40 * (1 - burstT) * (1 - burstT),
+          10 + v.vy * (1 - burstT) - 40 * (1 - burstT) * (1 - burstT),
           gate.position.z + v.vz * (1 - burstT));
       }
       p.needsUpdate = true;
     } else burst.visible = false;
   }
 
+  /* chase camera: behind the car along the track tangent, eased so the
+     agent's 30 Hz steering jitter doesn't shake the view */
+  const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+  let camInit = false;
   function chaseCamera() {
-    camera.position.set(sim.x * 0.55, 78, -sim.y + 150);
-    camera.lookAt(sim.x * 0.8, 4, -sim.y - 90);
+    const tx = centreXPrime(sim.y), len = Math.hypot(tx, 1);
+    const fx_ = tx / len, fz = -1 / len;                  // forward unit (x, z)
+    const want = new THREE.Vector3(sim.x - fx_ * 82, 36, -sim.y - fz * 82);
+    const look = new THREE.Vector3(sim.x + fx_ * 130, 6, -sim.y + fz * 130);
+    if (!camInit) { camPos.copy(want); camLook.copy(look); camInit = true; }
+    camPos.lerp(want, 0.12);
+    camLook.lerp(look, 0.18);
+    camera.position.copy(camPos);
+    camera.lookAt(camLook);
   }
   function attractCamera(t) {
-    const a = t * 0.25;
-    camera.position.set(sim.x + Math.sin(a) * 130, 60, -sim.y + Math.cos(a) * 130);
-    camera.lookAt(sim.x, 6, -sim.y);
+    const a = t * 0.18;
+    camera.position.set(sim.x + Math.sin(a) * 120, 34, -sim.y + Math.cos(a) * 120);
+    camera.lookAt(sim.x, 8, -sim.y);
+    camInit = false;
   }
 
   function resize() {

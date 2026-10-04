@@ -109,6 +109,8 @@ GitHub Actions* if it isn't already.
 index.html                     hub page
 shared/fly-brain.js            connectome-seeded agent + REINFORCE trainer
 shared/connectome-data.json    generated static connectome (92 neurons / 966 edges)
+shared/scene-fx.js             shared look: tone mapping, skies, glow, textures
+shared/assets/ shared/thumbs/  Blender-built meshes, hub-page screenshots
 beat-saber/ driving-sim/ open-world/   one self-contained game per folder
 tools/fly-brain-test/          headless Node regression harness (npm test)
 tools/neuron-fetch/            connectome data pipeline (Python)

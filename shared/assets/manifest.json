@@ -3,8 +3,8 @@
   "generated_at": "2026-09-13T10:08:38+00:00",
   "note": "Deterministic meshes for the game pages; games fall back to primitives if these fail to load. sha256 for reproducibility.",
   "files": {
-    "car.glb": "06d0abcbbca07580f908c2d76209f49d7652d96d9e5e9652b050562b689091ee",
+    "car.glb": "06847f86a52616100f4dd8b9b6f89e7f3b20e8cc762fe777f35e461e71ff4514",
     "note-gem.glb": "c8987502209f7f3920193a87fcac8006b9c51c8af35ca77660c330530602e05e",
-    "fly-rover.glb": "4bcacf9b557026088288ff99e7f81ff071cfa1e298aca2a6d7093b6a5b86c4d8"
+    "fly-rover.glb": "d5a178ce7624a950fac1e034a0b5188207067665f88ec324db921acb104da2b7"
   }
 }

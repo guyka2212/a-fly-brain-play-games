@@ -6,64 +6,119 @@
 <title>A Fly Brain Plays Games</title>
 <style>
   :root {
-    --bg: #0d1117; --panel: #161b22; --edge: #30363d;
+    --bg: #0b0e14; --panel: #141a24; --edge: #273041;
     --text: #e6edf3; --dim: #8b949e; --accent: #58a6ff;
+    --drive: #ff9466; --beat: #ff4fa8; --world: #7dffb0;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
+    margin: 0; color: var(--text);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(255,148,102,0.16), transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, rgba(176,124,255,0.18), transparent 60%),
+      radial-gradient(900px 600px at 50% 110%, rgba(53,224,255,0.10), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
   }
-  header { text-align: center; padding: 48px 16px 8px; }
-  h1 { margin: 0; font-size: 26px; letter-spacing: 0.5px; }
-  h1 .fly { color: var(--accent); }
-  .tagline { color: var(--dim); font-size: 13px; margin-top: 10px; max-width: 640px; line-height: 1.7; }
-  .games { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; padding: 28px 16px 8px; max-width: 1080px; }
+  header { text-align: center; padding: 64px 16px 8px; max-width: 820px; }
+  .eyebrow { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); }
+  h1 {
+    margin: 14px 0 0; font-size: clamp(28px, 5vw, 46px); letter-spacing: -0.5px; line-height: 1.1;
+    background: linear-gradient(90deg, #ffd36e, #ff7a7a 35%, #c18cff 65%, #6fe3ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { color: #b7c0cc; font-size: 14px; margin: 18px auto 0; max-width: 640px; line-height: 1.75; }
+  .games {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 22px;
+    width: 100%; max-width: 1140px; padding: 40px 16px 8px;
+  }
   a.card {
-    display: block; width: 300px; background: var(--panel); border: 1px solid var(--edge);
-    border-radius: 12px; padding: 20px; text-decoration: none; color: var(--text);
-    transition: border-color 0.15s, transform 0.15s;
+    --c: var(--accent);
+    display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 16px; overflow: hidden; text-decoration: none; color: var(--text);
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
   }
-  a.card:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .card .icon { font-size: 30px; }
-  .card h2 { margin: 10px 0 6px; font-size: 16px; color: var(--accent); }
-  .card p { margin: 0; color: var(--dim); font-size: 12px; line-height: 1.6; }
-  .card .modes { margin-top: 12px; font-size: 11px; color: var(--text); }
-  footer { margin-top: auto; padding: 26px 16px 34px; text-align: center; color: var(--dim); font-size: 11px; line-height: 1.8; max-width: 720px; }
+  a.card:hover, a.card:focus-visible {
+    border-color: var(--c); transform: translateY(-4px);
+    box-shadow: 0 14px 40px -12px var(--c); outline: none;
+  }
+  a.card.drive { --c: var(--drive); } a.card.beat { --c: var(--beat); } a.card.world { --c: var(--world); }
+  .thumb { position: relative; aspect-ratio: 3 / 2; overflow: hidden; background: #10151c; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+  a.card:hover .thumb img { transform: scale(1.06); }
+  .thumb::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(20,26,36,0.95));
+  }
+  .play {
+    position: absolute; right: 14px; bottom: 12px; z-index: 1; font-size: 11px; letter-spacing: 1px;
+    padding: 6px 10px; border-radius: 999px; background: rgba(11,14,20,0.75); border: 1px solid var(--c); color: var(--c);
+  }
+  .body { padding: 16px 20px 20px; }
+  .card h2 { margin: 0 0 8px; font-size: 18px; color: var(--c); }
+  .card p { margin: 0; color: var(--dim); font-size: 12.5px; line-height: 1.65; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+  .tag { font-size: 10.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--edge); color: #b7c0cc; }
+  .how {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;
+    width: 100%; max-width: 1140px; padding: 30px 16px 0;
+  }
+  .step { border: 1px dashed var(--edge); border-radius: 12px; padding: 14px 16px; font-size: 12px; color: var(--dim); line-height: 1.65; }
+  .step b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+  footer { margin-top: auto; padding: 40px 16px 36px; text-align: center; color: var(--dim); font-size: 11px; line-height: 1.8; max-width: 760px; }
   footer b { color: var(--text); }
   footer a { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) {
+    a.card, .thumb img { transition: none; }
+    a.card:hover { transform: none; }
+    a.card:hover .thumb img { transform: none; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1><span class="fly">◑</span> A Fly Brain Plays Games</h1>
+  <div class="eyebrow">connectome-seeded · reinforcement learning · live in your browser</div>
+  <h1>A Fly Brain Plays Games</h1>
   <p class="tagline">
     A neural network seeded from a curated <i>Drosophila</i> escape/leg-motor
-    connectome learns to play three small games live in your browser, via
-    REINFORCE. Every game is AI-only: you watch, fast-forward and reset — the fly drives.
+    connectome learns to play three small 3D games via REINFORCE.
+    Every game is AI-only: you watch, fast-forward and reset — the fly drives.
   </p>
 </header>
 
 <div class="games">
-  <a class="card" href="driving-sim/">
-    <div class="icon">🚗</div>
-    <h2>Driving Sim</h2>
-    <p>Steer a car along a winding road. Checkpoints score; crashes end the episode.</p>
-    <div class="modes">AI-only · Watch the Fly Brain Learn</div>
+  <a class="card drive" href="driving-sim/">
+    <div class="thumb"><img src="shared/thumbs/driving-sim.jpg" alt="Dusk highway with pine trees; the fly-driven car rounds a bend toward a glowing checkpoint arch" loading="lazy"><span class="play">▶ WATCH</span></div>
+    <div class="body">
+      <h2>Driving Sim</h2>
+      <p>Steer a car along a winding dusk highway. Checkpoints score; crashes end the episode.</p>
+      <div class="tags"><span class="tag">steerL · hold · steerR</span><span class="tag">AI-only</span></div>
+    </div>
   </a>
-  <a class="card" href="beat-saber/">
-    <div class="icon">🎵</div>
-    <h2>Beat Saber</h2>
-    <p>Slice falling notes on the beat across three lanes, to a generated metronome track.</p>
-    <div class="modes">AI-only · Watch the Fly Brain Learn</div>
+  <a class="card beat" href="beat-saber/">
+    <div class="thumb"><img src="shared/thumbs/beat-saber.jpg" alt="Neon synthwave stage: a glowing saber slashes lane-coloured gems under a striped retro sun" loading="lazy"><span class="play">▶ WATCH</span></div>
+    <div class="body">
+      <h2>Beat Saber</h2>
+      <p>Slash glowing notes on the beat across three lanes, to a generated metronome track.</p>
+      <div class="tags"><span class="tag">swingL · swingC · swingR · wait</span><span class="tag">AI-only</span></div>
+    </div>
   </a>
-  <a class="card" href="open-world/">
-    <div class="icon">🧭</div>
-    <h2>Open World</h2>
-    <p>Free-roam a small arena, collect orbs and explore — the fly learns to forage.</p>
-    <div class="modes">AI-only · Watch the Fly Brain Learn</div>
+  <a class="card world" href="open-world/">
+    <div class="thumb"><img src="shared/thumbs/open-world.jpg" alt="Twilight meadow arena ringed by pines; the fly rover forages for glowing crystal orbs" loading="lazy"><span class="play">▶ WATCH</span></div>
+    <div class="body">
+      <h2>Open World</h2>
+      <p>Free-roam a twilight meadow and forage for glowing crystals — the fly learns to hunt them down.</p>
+      <div class="tags"><span class="tag">5 movement actions</span><span class="tag">drag to orbit</span><span class="tag">AI-only</span></div>
+    </div>
   </a>
+</div>
+
+<div class="how">
+  <div class="step"><b>1 · Seeded wiring</b>92 curated fly neurons and 966 weighted edges become the network's architecture and starting weights.</div>
+  <div class="step"><b>2 · Sense → act</b>Game features drive tuned sensor neurons; the motor pool's activity is read out as a choice of action.</div>
+  <div class="step"><b>3 · Learn live</b>Small rewards each step, one policy-gradient update per episode — the learning curve updates as you watch.</div>
 </div>
 
 <footer>

@@ -175,60 +175,168 @@
   }
 
   /* ============================== three.js ================================ */
+  /* Look: twilight meadow. Gradient dusk sky, grassy arena with tufts and
+     stone walls trimmed in light, a forest and hills beyond the walls,
+     glowing crystal orbs with light beams, fireflies, and soft shadows.
+     Cosmetic only — nothing here feeds the sim, sensors or rewards (all
+     decorations are visual; collisions are still just the arena walls). */
   const wrap = document.getElementById("canvas-wrap");
   const canvas = document.getElementById("c");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const fx = window.flyFx;
+  if (fx) fx.setupRenderer(renderer, { exposure: 1.0 });
 
+  const SKY = { top: 0x13224f, horizon: 0xf09a74, bottom: 0x141a22, curve: 0.32,
+    sunDir: new THREE.Vector3(-0.8, 0.1, -0.6), sunColor: 0xffb27a, sunGlow: 0.8 };
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0e13);
-  scene.fog = new THREE.Fog(0x0b0e13, 80, 340);
+  scene.background = new THREE.Color(0x1b2236);
+  scene.fog = new THREE.Fog(0x4a4058, 180, 760);
+  if (fx) {
+    scene.add(fx.skyDome(Object.assign({ radius: 900 }, SKY)));
+    const st = fx.stars(500, 860, 0.35);
+    st.material.opacity = 0.5;
+    scene.add(st);
+    scene.environment = fx.envFromSky(renderer, SKY);
+  }
 
-  const camera = new THREE.PerspectiveCamera(60, 3 / 2, 0.5, 1200);
+  const camera = new THREE.PerspectiveCamera(55, 3 / 2, 0.5, 2000);
 
-  scene.add(new THREE.HemisphereLight(0xbfd4e8, 0x0c0f13, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.6);
-  sun.position.set(120, 260, 80);
+  scene.add(new THREE.HemisphereLight(0xa9bcff, 0x3a3020, 1.0));
+  /* low warm sun from the sky's sun direction; shadow box covers the arena */
+  const sun = new THREE.DirectionalLight(0xffc48f, 2.4);
+  sun.position.copy(SKY.sunDir).normalize().multiplyScalar(320).setY(150);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -150, right: 150, top: 150, bottom: -150, near: 10, far: 700 });
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.5;
   scene.add(sun);
 
-  /* ground + follow grid */
+  const hash = (k) => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+  /* arena grass + a wider darker meadow beyond the walls */
+  const grassTex = fx ? fx.noiseTexture({ base: 0x3d5a2e, spread: 0.12, size: 256, density: 0.9, repeat: [12, 12], seed: 21 }) : null;
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(HALF * 2, HALF * 2),
-    new THREE.MeshLambertMaterial({ color: 0x10161f })
+    new THREE.MeshStandardMaterial({ color: grassTex ? 0xffffff : 0x10161f, map: grassTex, roughness: 0.95 })
   );
   ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
   scene.add(ground);
-  const grid = new THREE.GridHelper(HALF * 2, GRID, 0x1c2733, 0x16202b);
+  const meadowTex = fx ? fx.noiseTexture({ base: 0x2c4224, spread: 0.1, size: 256, density: 0.8, repeat: [40, 40], seed: 22 }) : null;
+  const meadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(1600, 1600),
+    new THREE.MeshStandardMaterial({ color: meadowTex ? 0xffffff : 0x0b0f14, map: meadowTex, roughness: 1 })
+  );
+  meadow.rotation.x = -Math.PI / 2;
+  meadow.position.y = -0.3;
+  meadow.receiveShadow = true;
+  scene.add(meadow);
+  /* faint exploration grid, so coverage still reads */
+  const grid = new THREE.GridHelper(HALF * 2, GRID, 0x9fd18a, 0x9fd18a);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.07;
   grid.position.y = 0.05;
   scene.add(grid);
 
-  /* walls */
-  const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a2230 });
+  /* stone walls with a glowing cyan trim along the top */
+  const stoneTex = fx ? fx.noiseTexture({ base: 0x6b6a72, spread: 0.14, size: 128, density: 0.9, seed: 31,
+    draw(g, n) { g.strokeStyle = "rgba(30,30,40,0.55)"; g.lineWidth = 2;
+      for (let y = 0; y < n; y += n / 4) { g.beginPath(); g.moveTo(0, y); g.lineTo(n, y); g.stroke();
+        for (let x = (y / (n / 4)) % 2 ? n / 4 : 0; x < n; x += n / 2) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + n / 4); g.stroke(); } } } }) : null;
+  const wallMat = new THREE.MeshStandardMaterial({ color: stoneTex ? 0xffffff : 0x1a2230, map: stoneTex, roughness: 0.9 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0x0f3340, emissive: 0x4fe3ff, emissiveIntensity: 1.6 });
   const wallH = 8, wallT = 3;
   [[0, -HALF - wallT / 2, HALF * 2 + wallT * 2, wallT],
    [0, HALF + wallT / 2, HALF * 2 + wallT * 2, wallT],
    [-HALF - wallT / 2, 0, wallT, HALF * 2 + wallT * 2],
    [HALF + wallT / 2, 0, wallT, HALF * 2 + wallT * 2]].forEach(([x, z, sx, sz]) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, wallH, sz), wallMat);
+    const geo = new THREE.BoxGeometry(sx, wallH, sz);
+    /* tile the stone texture by wall length instead of stretching it */
+    const uv = geo.getAttribute("uv"), len = Math.max(sx, sz) / 8;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * len);
+    if (stoneTex) wallMat.map.wrapS = THREE.RepeatWrapping;
+    const m = new THREE.Mesh(geo, wallMat);
     m.position.set(x, wallH / 2, z);
+    m.castShadow = m.receiveShadow = true;
     scene.add(m);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(sx + 0.2, 0.5, sz + 0.2), trimMat);
+    trim.position.set(x, wallH + 0.25, z);
+    scene.add(trim);
   });
+
+  /* grass tufts inside the arena (decor only, not obstacles) */
+  const TUFTS = 700;
+  const tuftGeo = new THREE.ConeGeometry(1.1, 1.5, 3);
+  tuftGeo.translate(0, 0.75, 0);
+  const tufts = new THREE.InstancedMesh(tuftGeo,
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true }), TUFTS);
+  const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < TUFTS; i++) {
+    const x = (hash(i * 2.1) * 2 - 1) * (HALF - 4), z = (hash(i * 3.7 + 1) * 2 - 1) * (HALF - 4);
+    const sc = 0.5 + hash(i * 5.3) * 1.1;
+    tmpQ.setFromAxisAngle(UP, hash(i * 7.9) * 6.28);
+    tmpM.compose(tmpP.set(x, 0, z), tmpQ, tmpS.set(sc, sc * (0.8 + hash(i) * 0.8), sc));
+    tufts.setMatrixAt(i, tmpM);
+    tufts.setColorAt(i, new THREE.Color().setHSL(0.27 + hash(i * 1.7) * 0.06, 0.55, 0.13 + hash(i * 2.9) * 0.1));
+  }
+  scene.add(tufts);
+
+  /* forest ring + rolling hills beyond the walls */
+  const TREES = 260;
+  const pineGeo = new THREE.ConeGeometry(7, 24, 7);
+  pineGeo.translate(0, 17, 0);
+  const trunkGeo = new THREE.CylinderGeometry(1.1, 1.5, 6, 6);
+  trunkGeo.translate(0, 3, 0);
+  const pines = new THREE.InstancedMesh(pineGeo,
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, flatShading: true }), TREES);
+  const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x3b2a1f, roughness: 1 }), TREES);
+  for (let i = 0; i < TREES; i++) {
+    const a = hash(i * 1.31) * Math.PI * 2;
+    const r = HALF + 18 + hash(i * 2.77) * 150;
+    const sq = Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)));  // push out of the square arena
+    const sc = 0.7 + hash(i * 4.4) * 1.0;
+    tmpQ.setFromAxisAngle(UP, hash(i) * 6.28);
+    tmpM.compose(tmpP.set(Math.cos(a) * r / sq, 0, Math.sin(a) * r / sq), tmpQ, tmpS.set(sc, sc * (0.8 + hash(i * 9) * 0.5), sc));
+    pines.setMatrixAt(i, tmpM); trunks.setMatrixAt(i, tmpM);
+    pines.setColorAt(i, new THREE.Color().setHSL(0.36 + hash(i * 3.3) * 0.06, 0.5, 0.1 + hash(i * 6.1) * 0.08));
+  }
+  pines.castShadow = trunks.castShadow = true;
+  scene.add(pines, trunks);
+  const hillMat = new THREE.MeshStandardMaterial({ color: 0x2b3d2c, roughness: 1, flatShading: true });
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * Math.PI * 2 + hash(i) * 0.2, r = 520 + hash(i * 3) * 160;
+    const h = 40 + hash(i * 7) * 90;
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), hillMat);
+    hill.scale.set(h * 2.2, h, h * 2.2);
+    hill.position.set(Math.cos(a) * r, -2, Math.sin(a) * r);
+    scene.add(hill);
+  }
 
   /* agent: a little "fly rover". Blender-built body (fly-rover.glb, nose at
      -Z, ~2.5 units) with a primitive sphere+whisker fallback so the page
      always runs. The whisker stays visible in both cases — it makes heading
      legible at orbit-camera distance. */
   const agentGroup = new THREE.Group();
-  const bodyMat = new THREE.MeshLambertMaterial({ color: 0xa371f7 });
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xa371f7, metalness: 0.2, roughness: 0.4 });
   const body = new THREE.Mesh(new THREE.SphereGeometry(3.2, 20, 14), bodyMat);
   body.scale.set(1, 0.7, 1.3);
   body.position.y = 3;
+  body.castShadow = true;
   const whisker = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.5, 7),
-    new THREE.MeshBasicMaterial({ color: 0xe6edf3 })
+    new THREE.BoxGeometry(0.35, 0.35, 7),
+    new THREE.MeshBasicMaterial({ color: 0xbff4ff, transparent: true, opacity: 0.8 })
   );
   whisker.position.set(0, 3, -5);
   agentGroup.add(body, whisker);
+  const paintMats = [bodyMat];
+  if (fx) {
+    const tip = fx.glowSprite(0x7fe9ff, 5, 0.9);
+    tip.position.set(0, 3, -8.5);
+    agentGroup.add(tip);
+  }
   scene.add(agentGroup);
   if (typeof flyAssets !== "undefined") {
     flyAssets.load("fly-rover").then((g) => {
@@ -236,23 +344,38 @@
       g.position.y = 3;
       agentGroup.add(g);
       body.visible = false;                    // primitive fallback hidden
+      g.traverse((o) => { if (o.isMesh && o.material.name === "rover_body") paintMats.push(o.material); });
     }).catch((e) => console.warn("fly-rover.glb unavailable — using primitives", e));
   }
 
-  /* orbs (pooled meshes) */
-  const orbMat = new THREE.MeshBasicMaterial({ color: 0x3fb950, transparent: true, opacity: 0.85 });
+  /* orbs (pooled): spinning crystal + halo + light beam + ground ring */
+  const ORB_COLOR = 0x7dffb0;
+  const orbMat = new THREE.MeshStandardMaterial({ color: 0x1d6b3e, emissive: ORB_COLOR, emissiveIntensity: 1.3,
+    metalness: 0.1, roughness: 0.2, flatShading: true });
+  const beamMat = new THREE.MeshBasicMaterial({ color: ORB_COLOR, transparent: true, opacity: 0.07,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   const orbMeshes = [];
   for (let i = 0; i < N_ORBS; i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 12), orbMat);
+    const m = new THREE.Group();
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(2.6, 0), orbMat);
+    crystal.scale.set(1, 1.5, 1);
+    crystal.castShadow = true;
+    m.add(crystal);
+    m.userData.crystal = crystal;
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.5, 60, 12, 1, true), beamMat);
+    beam.position.y = 24;
+    m.add(beam);
+    if (fx) { const h = fx.glowSprite(ORB_COLOR, 16, 0.7); m.add(h); }
     m.visible = false;
     scene.add(m);
     orbMeshes.push(m);
   }
   /* soft rings under orbs so they read at distance */
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x3fb950, transparent: true, opacity: 0.25 });
+  const ringMat = new THREE.MeshBasicMaterial({ color: ORB_COLOR, transparent: true, opacity: 0.35,
+    blending: THREE.AdditiveBlending, depthWrite: false });
   const ringMeshes = [];
   for (let i = 0; i < N_ORBS; i++) {
-    const m = new THREE.Mesh(new THREE.RingGeometry(4.2, 5.4, 24), ringMat);
+    const m = new THREE.Mesh(new THREE.RingGeometry(4.2, 5.0, 32), ringMat);
     m.rotation.x = -Math.PI / 2;
     m.position.y = 0.15;
     m.visible = false;
@@ -260,27 +383,39 @@
     ringMeshes.push(m);
   }
 
-  /* collect burst: pooled point cloud, spawned where an orb is taken */
-  const BURST_N = 20;
+  /* fireflies: slow-drifting additive specks over the arena (decor) */
+  const FLIES = 70;
+  const flyGeo = new THREE.BufferGeometry();
+  flyGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(FLIES * 3), 3));
+  const fireflies = new THREE.Points(flyGeo, new THREE.PointsMaterial({ color: 0xfff3a0, size: 2.2,
+    map: fx ? fx.glowTexture() : null, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false }));
+  fireflies.frustumCulled = false;
+  scene.add(fireflies);
+
+  /* collect burst: pooled additive point cloud, spawned where an orb is taken */
+  const BURST_N = 36;
   const bursts = [];
   function spawnBurst(x, z) {
     let b = bursts.find((b) => b.t <= 0);
     if (!b) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(BURST_N * 3), 3));
-      const mat = new THREE.PointsMaterial({ color: 0x7ee787, size: 2.2, transparent: true, opacity: 1 });
+      const mat = new THREE.PointsMaterial({ color: 0x7ee787, size: 3.2, transparent: true, opacity: 1,
+        map: fx ? fx.glowTexture() : null, blending: THREE.AdditiveBlending, depthWrite: false });
       const pts = new THREE.Points(geo, mat);
       pts.visible = false;
+      pts.frustumCulled = false;
       scene.add(pts);
       b = { pts, geo, mat, t: 0 };
       bursts.push(b);
     }
     b.t = 0.6;
-    b.mat.color.set(0x7ee787);
+    b.mat.color.set(0x9dffc4);
     const p = b.geo.getAttribute("position");
     b.vel = new Array(BURST_N).fill(0).map(() => {
-      const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 14;
-      return { vx: Math.cos(a) * r, vy: 10 + Math.random() * 12, vz: Math.sin(a) * r };
+      const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 16;
+      return { vx: Math.cos(a) * r, vy: 10 + Math.random() * 16, vz: Math.sin(a) * r };
     });
     for (let i = 0; i < BURST_N; i++) p.setXYZ(i, x, 6, z);
     p.needsUpdate = true;
@@ -301,27 +436,28 @@
     }
   }
 
-  /* trail: breadcrumbs so the foraging path reads at a glance */
+  /* trail: glowing breadcrumbs so the foraging path reads at a glance */
   const TRAIL_N = 60;
   const trailGeo = new THREE.BufferGeometry();
   trailGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3));
-  const trailMat = new THREE.PointsMaterial({ color: 0xa371f7, size: 1.4, transparent: true, opacity: 0.4 });
+  const trailMat = new THREE.PointsMaterial({ color: 0xc9a8ff, size: 2.4, transparent: true, opacity: 0.7,
+    map: fx ? fx.glowTexture() : null, blending: THREE.AdditiveBlending, depthWrite: false });
   const trail = new THREE.Points(trailGeo, trailMat);
   trail.frustumCulled = false;
   scene.add(trail);
   let trailIdx = 0, trailAcc = 0;
 
-  function setAgentColor(hex) {
-    bodyMat.color.set(hex);
-    agentGroup.traverse((o) => {
-      if (o.isMesh && o.material && o.material.color && o !== whisker) o.material.color.set(hex);
-    });
+  /* wall-bump flash tints only the body paint (eyes, wings keep theirs) */
+  const PAINT = new THREE.Color(0xa371f7), BUMP = new THREE.Color(0xf85149);
+  function setAgentColor(bumped) {
+    for (const m of paintMats) m.color.copy(bumped ? BUMP : PAINT);
   }
 
   function layoutScene(t, dt) {
+    const vdt = Math.min(dt, 1 / 30);      // effects stay visible at 16x
     agentGroup.position.set(agent.x, 0, agent.z);
     agentGroup.rotation.y = agent.h;
-    setAgentColor(agent.bumpT > 0 ? 0xf85149 : 0xa371f7);
+    setAgentColor(agent.bumpT > 0);
     if (agent.bumpT > 0) agent.bumpT -= dt;
 
     for (let i = 0; i < orbs.length; i++) {
@@ -331,11 +467,25 @@
       if (!o.taken) {
         const bob = Math.sin(t * 2 + o.t) * 0.8;
         orbMeshes[i].position.set(o.x, 6 + bob, o.z);
-        orbMeshes[i].scale.setScalar(1 + Math.sin(t * 3 + o.t) * 0.08);
+        orbMeshes[i].userData.crystal.rotation.y = t * 1.2 + o.t;
         ringMeshes[i].position.x = o.x;
         ringMeshes[i].position.z = o.z;
+        const s = 1 + Math.sin(t * 3 + o.t) * 0.12;
+        ringMeshes[i].scale.set(s, s, s);
       }
     }
+    orbMat.emissiveIntensity = 1.2 + Math.sin(t * 3) * 0.25;
+
+    /* fireflies wander on slow deterministic loops */
+    const fp = flyGeo.getAttribute("position");
+    for (let i = 0; i < FLIES; i++) {
+      const a = t * (0.15 + hash(i) * 0.2) + hash(i * 3.1) * 6.28;
+      const r = 20 + hash(i * 5.7) * (HALF - 25);
+      fp.setXYZ(i, Math.cos(a + i) * r, 3 + hash(i * 8.3) * 10 + Math.sin(t * 1.3 + i) * 1.5,
+        Math.sin(a * 0.8 + i * 2) * r);
+    }
+    fp.needsUpdate = true;
+    fireflies.material.opacity = 0.55 + Math.sin(t * 2.3) * 0.3;
 
     /* breadcrumb trail (sim-time spaced) */
     trailAcc += dt;
@@ -347,11 +497,11 @@
       p.needsUpdate = true;
     }
 
-    layoutBursts(dt);
+    layoutBursts(vdt);
   }
 
   /* orbit camera (drag to spectate) + follow */
-  let camYaw = 0, camPitch = 0.55, camDist = 90, dragging = false, lastX = 0, lastY = 0;
+  let camYaw = 0, camPitch = 0.36, camDist = 84, dragging = false, lastX = 0, lastY = 0;
   wrap.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
   addEventListener("pointerup", () => { dragging = false; });
   addEventListener("pointermove", (e) => {

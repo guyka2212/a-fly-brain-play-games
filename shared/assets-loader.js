@@ -22,7 +22,13 @@
 
   /* Tiny binary-glTF parser: exactly what our builder emits — one mesh of
      N primitives with POSITION + NORMAL accessors and ushort indices, plus
-     pbrMetallicRoughness materials. ~80 lines instead of the 300 KB loader. */
+     pbrMetallicRoughness materials (kept as MeshStandardMaterial, named after
+     the glTF material so games can tint e.g. only the body). ~90 lines instead of the 300 KB loader. */
+  function hasNormals(nor) {
+    for (let i = 0; i < nor.length; i++) if (nor[i] !== 0) return true;
+    return false;
+  }
+
   function parseGlb(buffer) {
     const view = new DataView(buffer);
     if (view.getUint32(0, true) !== 0x46546c67) throw new Error("not glTF");
@@ -53,20 +59,40 @@
       const pos = readAcc(prim.attributes.POSITION);
       const nor = readAcc(prim.attributes.NORMAL);
       const idx = readAcc(prim.indices);
-      const geo = new THREE.BufferGeometry();
+      let geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
       geo.setIndex(new THREE.BufferAttribute(idx, 1));
-      const m = json.materials[prim.material].pbrMetallicRoughness;
+      /* Older builder runs exported all-zero normals (NaN after normalize ->
+         black lit surfaces). Rebuild flat normals then — matching Blender's
+         default flat-shaded primitives. */
+      if (!hasNormals(nor)) {
+        geo = geo.toNonIndexed();
+        geo.computeVertexNormals();
+      }
+      const jm = json.materials[prim.material];
+      const m = jm.pbrMetallicRoughness;
       const c = m.baseColorFactor || [1, 1, 1, 1];
-      const mat = new THREE.MeshLambertMaterial({
-        color: new THREE.Color(c[0], c[1], c[2]),
+      /* glTF base colours are linear, which is what THREE.Color(r, g, b)
+         takes. Lamp/eye materials glow so they read at night. */
+      const glow = /light|eye/.test(jm.name || "");
+      const color = new THREE.Color(c[0], c[1], c[2]);
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        metalness: m.metallicFactor ?? 0.2,
+        roughness: m.roughnessFactor ?? 0.5,
+        emissive: glow ? color : 0x000000,
+        emissiveIntensity: glow ? 1.6 : 0,
         transparent: c[3] < 1,
         opacity: c[3],
       });
+      mat.name = jm.name || "";
       const mesh = new THREE.Mesh(geo, mat);
+      mesh.name = mat.name;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       group.add(mesh);
-      tris += idx.length / 3;
+      tris += geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3;
     }
     group.userData.tris = tris;
     return group;
