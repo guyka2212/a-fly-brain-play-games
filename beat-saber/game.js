@@ -579,7 +579,7 @@
   document.getElementById("start-fly").onclick = start;
 
   /* ============================== main loop =============================== */
-  /* Brain acts every 50 ms of SONG time (≤ 20 decisions/s regardless of the
+  /* Brain acts every 100 ms of SONG time (10 decisions/s regardless of the
      speed multiplier), so fast-forward yields more episodes, not a different
      policy-observation cadence. */
   let lastTs = 0, hudLast = 0, chartLast = 0, actAcc = 0;

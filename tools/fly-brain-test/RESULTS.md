@@ -1,6 +1,6 @@
 # Verification results — is it really the fly brain playing?
 
-Generated: 2026-09-13T10:14:57.275Z · node v24.20.0
+Generated: 2026-10-04T06:25:02.090Z · node v22.22.0
 
 ## 0. Regression harness (run.js)
 ```
@@ -9,17 +9,18 @@ weight checksum (episode 0): 749.2868
 
 stats after 50 episodes: {
   episode: 50,
-  lastScore: 0.96,
-  avgScore: 1.08,
+  lastScore: 1.24,
+  avgScore: 1.04,
   history: 50,
-  baseline: 1.04
+  baseline: 1.1
 }
-weight checksum (episode 50): 749.7125
-activations ok — top neuron: TA0_P1 sensor 0.245
-action probs: 22.8% / 47.0% / 30.2%
+weight checksum (episode 50): 749.4916
+live tensors after ep 1 / ep 50: 23 / 23
+activations ok — top neuron: TA0_P1 sensor 0.061
+action probs: 32.1% / 34.4% / 33.5%
 
-scores ep 1-5: 1.18, 1.30, 1.12, 1.01, 1.19
-scores ep 46-50: 1.24, 0.95, 0.96, 1.01, 0.96
+scores ep 1-5: 1.30, 1.02, 0.96, 1.02, 0.96
+scores ep 46-50: 1.13, 1.18, 1.07, 1.02, 1.24
 
 ALL CHECKS PASSED ✅
 
@@ -55,21 +56,21 @@ Verdict: ✅ PASS
 Method: each game's dynamics (sensors, reward shaping, action semantics) are mirrored headless exactly as in game.js. The fly brain trains from the seeded initialization each run. A control arm steps the identical environment with uniformly random actions (same seeds) — the fly has to beat both its own start *and* noise. Verdict: PASS = last-10% mean beats first-10% mean by ≥ max(0.5, 15%) and > 2×SEM and > control; INCONCLUSIVE = positive but small/noisy; FAIL = no gain.
 
 ### driving-sim
-- seed 101: first10% -0.65 → last10% -0.11 (Δ +0.54, SEM 0.15) · control(noise) mean -0.86 · **PASS** · 6s
-- seed 202: first10% -0.64 → last10% -0.03 (Δ +0.61, SEM 0.15) · control(noise) mean -0.85 · **PASS** · 6s
-- seed 303: first10% -0.60 → last10% -0.09 (Δ +0.52, SEM 0.14) · control(noise) mean -0.92 · **PASS** · 6s
+- seed 101: first10% -0.61 → last10% -0.24 (Δ +0.37, SEM 0.17) · control(noise) mean -0.86 · **INCONCLUSIVE** · 1s
+- seed 202: first10% -0.66 → last10% -0.06 (Δ +0.60, SEM 0.16) · control(noise) mean -0.85 · **PASS** · 1s
+- seed 303: first10% -0.67 → last10% -0.21 (Δ +0.46, SEM 0.13) · control(noise) mean -0.92 · **INCONCLUSIVE** · 1s
 Verdict: ✅ PASS
 
 ### beat-saber
-- seed 101: first10% -2.29 → last10% -1.43 (Δ +0.86, SEM 0.52) · control(noise) mean -2.44 · **INCONCLUSIVE** · 13s
-- seed 202: first10% -3.42 → last10% -0.35 (Δ +3.06, SEM 0.50) · control(noise) mean -2.65 · **PASS** · 13s
-- seed 303: first10% -1.94 → last10% -1.08 (Δ +0.86, SEM 0.53) · control(noise) mean -2.83 · **INCONCLUSIVE** · 16s
+- seed 101: first10% -2.52 → last10% 0.31 (Δ +2.82, SEM 0.65) · control(noise) mean -2.44 · **PASS** · 2s
+- seed 202: first10% -2.47 → last10% -0.94 (Δ +1.53, SEM 0.39) · control(noise) mean -2.65 · **PASS** · 2s
+- seed 303: first10% -1.21 → last10% -0.88 (Δ +0.32, SEM 0.49) · control(noise) mean -2.83 · **INCONCLUSIVE** · 2s
 Verdict: ✅ PASS
 
 ### open-world
-- seed 101: first10% -6.72 → last10% -4.30 (Δ +2.42, SEM 1.00) · control(noise) mean -7.63 · **PASS** · 92s
-- seed 202: first10% -6.58 → last10% -1.86 (Δ +4.72, SEM 0.52) · control(noise) mean -7.06 · **PASS** · 91s
-- seed 303: first10% -6.96 → last10% -0.45 (Δ +6.51, SEM 0.74) · control(noise) mean -7.70 · **PASS** · 92s
+- seed 101: first10% -6.94 → last10% -2.92 (Δ +4.02, SEM 0.49) · control(noise) mean -7.63 · **PASS** · 9s
+- seed 202: first10% -7.05 → last10% -2.38 (Δ +4.67, SEM 0.58) · control(noise) mean -7.06 · **PASS** · 10s
+- seed 303: first10% -4.61 → last10% -1.11 (Δ +3.50, SEM 0.48) · control(noise) mean -7.70 · **PASS** · 10s
 Verdict: ✅ PASS
 
 ## 4. 3D brain view — positions valid, wiring present

@@ -25,6 +25,8 @@ shared/fly-brain.js            # core agent: connectome-seeded network + REINFOR
 shared/connectome-data.json    # committed static data: 92 neurons / 966 edges.
                                # GENERATED — do not hand-edit.
 tools/fly-brain-test/run.js    # headless Node regression harness (npm test)
+tools/fly-brain-test/verify.js # source / agency / learning checks (npm run verify)
+                               # -> rewrites tools/fly-brain-test/RESULTS.md
 tools/neuron-fetch/
   build_curated.py             # offline, deterministic builder (SEED 20260911), no network
   fetch_connectome.py          # live pull from Janelia neuPrint hemibrain (needs token)
@@ -45,6 +47,7 @@ the harness. Do not add npm tooling for the site itself.
 # Regression harness — run after ANY change to shared/fly-brain.js
 npm install        # first time only (installs @tensorflow/tfjs for Node)
 npm test           # 50 fake episodes; exit 0 = training loop + API verified
+npm run verify     # ~5 min: data source, agency, multi-seed learning checks
 
 # Serve locally — MUST run from repo root (see "Relative paths" gotcha below)
 python -m http.server 8000
@@ -113,7 +116,8 @@ policy, greedy takes argmax (use for demo/playback).
    `../shared/connectome-data.json` is hardcoded relative in `fly-brain.js`).
 2. Load TF.js UMD from CDN, then `../shared/fly-brain.js` — in that order.
 3. Define ≤ 6 features and the action set; call `init` after the Start button
-   (or on load), and honor `?mode=human|fly` as well as the in-page toggle.
+   (or on load). Games are **AI-only** — no keyboard/mouse control path and no
+   `?mode=` query handling; `npm run verify` (agency check) fails if one appears.
 4. Each frame/step: build the state array, call `act`, call `reward` (small, frequent,
    fractional rewards work best), and call `endEpisode` when the episode ends.
    Throttle `act()` to ≤ ~20 Hz in fast games so the REINFORCE replay stays cheap.
@@ -121,6 +125,11 @@ policy, greedy takes argmax (use for demo/playback).
 6. Keep everything self-contained in the folder; no bundler, no imports.
 
 ## Conventions & gotchas
+
+- **Tensor hygiene:** `act()` runs every step, so nothing it allocates may
+  outlive the call (`forward()` reads results with `dataSync()` inside a
+  `tf.tidy`). The episode replay is one batched `[T, …]` graph, not T per-step
+  graphs. `tf.memory().numTensors` must stay flat across episodes.
 
 - **Variable shape trap (fixed once, don't reintroduce):** `st.vars` is a flat
   array `[W1, W2, W3, b2, b3, W4, b4]` — the shape `optimizer.minimize()`,

@@ -71,6 +71,9 @@
     epClock = 0;
     collected = 0;
   }
+  /* The render loop draws the attract view from page load, before Start:
+     the world must exist by then or the first frame throws and kills it. */
+  resetWorld();
 
   function nearestOrb() {
     let best = null, bd = 1e9;

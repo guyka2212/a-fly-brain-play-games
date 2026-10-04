@@ -13,9 +13,10 @@ reinforcement learning, live in front of you.
 | `/beat-saber/` | Slice falling notes on the beat (generated metronome audio) |
 | `/open-world/` | Free-roam arena; collect orbs, explore terrain |
 
-Every game has a start screen with two modes: **Human Play** (keyboard/mouse) and
-**Watch the Fly Brain Play** (the agent controls the game and learns live).
-`?mode=human` / `?mode=fly` in the URL also works.
+Every game is **AI-only**: the start screen has a single **Watch the Fly Brain
+Learn** button, and from then on the agent is the only thing controlling the game
+(there is no keyboard/mouse control path — `npm run verify` checks this). You can
+fast-forward (1x/4x/16x), pause, restart the episode, or reset the brain.
 
 ## Honesty note (please read)
 
@@ -67,7 +68,9 @@ python -m http.server 8000
 `npm test` runs a headless Node regression harness for the agent
 (`tools/fly-brain-test/`): it loads the real connectome from disk, runs 50 fake
 episodes, and asserts weights actually move. Run it after touching
-`shared/fly-brain.js`.
+`shared/fly-brain.js`. `npm run verify` is the longer check: data source,
+no-human-control (agency) analysis of each game, and a multi-seed learning test
+against a random-action control; it rewrites `tools/fly-brain-test/RESULTS.md`.
 
 ## The connectome data pipeline
 

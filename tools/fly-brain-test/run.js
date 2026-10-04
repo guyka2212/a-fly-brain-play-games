@@ -79,6 +79,7 @@ async function main() {
   console.log("weight checksum (episode 0):", before.toFixed(4));
 
   const scoreByEp = [];
+  let tensorsAfterEp1 = 0;
   for (let ep = 1; ep <= 50; ep++) {
     let score = 0;
     for (let step = 0; step < N_STEPS; step++) {
@@ -91,6 +92,7 @@ async function main() {
     }
     flyBrain.endEpisode();
     scoreByEp.push(score);
+    if (ep === 1) tensorsAfterEp1 = tf.memory().numTensors;
   }
 
   const s = flyBrain.getStats();
@@ -110,6 +112,18 @@ async function main() {
   console.log("weight checksum (episode 50):", after.toFixed(4));
   assert.ok(Math.abs(after - before) > 0.01, "weights actually changed (gradients applied)");
   assert.ok(flyBrain.getMode() === "train", "default mode is train");
+
+  /* act() runs every frame in the browser: any tensor it (or endEpisode)
+     forgets to dispose accumulates forever in GPU memory. */
+  const tensorsNow = tf.memory().numTensors;
+  console.log("live tensors after ep 1 / ep 50:", tensorsAfterEp1, "/", tensorsNow);
+  assert.equal(tensorsNow, tensorsAfterEp1, "no tensor leak across act()/endEpisode()");
+  /* reset() must free the old variables + Adam state: one episode after a
+     reset lands on exactly the same live-tensor count as episode 1 did. */
+  flyBrain.reset();
+  for (let step = 0; step < N_STEPS; step++) flyBrain.act([rand(), rand(), rand(), rand()]);
+  flyBrain.endEpisode();
+  assert.equal(tf.memory().numTensors, tensorsAfterEp1, "reset() frees the old network");
 
   /* activation plumbing (the getHidden/getActivity fix). Sensor biases are
      strongly negative, so weak inputs legitimately silence the network —

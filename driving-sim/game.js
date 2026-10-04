@@ -526,6 +526,9 @@
     paused = !paused;
     bPause.textContent = paused ? "▶ Resume" : "⏸ Pause";
     bPause.classList.toggle("on", paused);
+    /* A crash's delayed auto-restart is skipped while paused; respawn on
+       resume so the episode loop can't stall on a dead car. */
+    if (!paused && started && !sim.alive) restart();
   };
   bRestart.onclick = restart;
   bReset.onclick = resetBrain;
@@ -544,9 +547,10 @@
     const dt = rdt * SPEEDS[speedIdx];
 
     if (started && !paused && sim.alive) {
-      /* One brain decision per simulated tick (act stays ≤ 20 Hz per contract;
-         at high speed multipliers we sub-step the brain in fixed 1/30 slices so
-         episode length in decisions stays identical across speeds). */
+      /* One brain decision per simulated tick, in fixed 1/30 s slices of sim
+         time (30 Hz — the cadence verify.js learning-checks), so episode length
+         in decisions stays identical across speed multipliers. A full 60 s
+         episode is 1800 steps; fly-brain.js replays it as one batched graph. */
       const H = 1 / 30;
       acc += dt;
       while (acc >= H) {

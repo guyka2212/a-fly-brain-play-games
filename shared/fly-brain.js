@@ -21,7 +21,7 @@
  *
  * Training: Monte-Carlo policy gradient (REINFORCE) with an average-reward
  * baseline and a small entropy bonus. At episode end the stored states are
- * replayed through the (unchanged) network and the loss
+ * replayed through the (unchanged) network as one batched graph and the loss
  *     Σ_t [ (G_t - baseline) · -log π(a_t|s_t) ] − β·Σ_t entropy
  * is back-propagated and applied with Adam.
  *
@@ -141,6 +141,11 @@
     }
     st.sensorNeurons = S; st.interNeurons = I; st.motorNeurons = M;
 
+    /* Free any previous network (re-init / reset) before allocating anew. */
+    for (const v of st.vars) v.dispose();
+    if (st.optimizer) st.optimizer.dispose();
+    st.vars = []; st.optimizer = null;
+
     const iIdx = new Map(I.map((n, i) => [n.id, i]));
     const mIdx = new Map(M.map((n, mi) => [n.id, mi]));
 
@@ -171,14 +176,16 @@
       (rand() - 0.5) * 2 / Math.sqrt(M.length)));
     const b4 = new Array(A).fill(0).map(() => (rand() - 0.5) * 0.3);
 
+    /* tf.variable() copies its initial tensor, so free the source tensor. */
+    const mkVar = (t) => { const v = tf.variable(t); t.dispose(); return v; };
     const v = {
-      W1: tf.variable(tf.tensor2d(w1)),
-      W2: tf.variable(tf.tensor2d(w2)),
-      W3: tf.variable(tf.tensor2d(w3)),
-      b2: tf.variable(tf.tensor1d(b2)),
-      b3: tf.variable(tf.tensor1d(b3)),
-      W4: tf.variable(tf.tensor2d(w4)),
-      b4: tf.variable(tf.tensor1d(b4)),
+      W1: mkVar(tf.tensor2d(w1)),
+      W2: mkVar(tf.tensor2d(w2)),
+      W3: mkVar(tf.tensor2d(w3)),
+      b2: mkVar(tf.tensor1d(b2)),
+      b3: mkVar(tf.tensor1d(b3)),
+      W4: mkVar(tf.tensor2d(w4)),
+      b4: mkVar(tf.tensor1d(b4)),
     };
     st.vars = [v.W1, v.W2, v.W3, v.b2, v.b3, v.W4, v.b4];
     st.optimizer = tf.train.adam(st.config.learningRate || LR);
@@ -187,45 +194,43 @@
 
   /* ------------------------------------------------------------ forward pass */
 
-  /* Replays one state through the network as a tf graph of the variables.
-     Returns { probs, logits } as tensors. With capture=true (default) also
-     stores the sensor/interneuron/motor activations as plain arrays in
-     st.lastHidden for the overlay. Training replay passes capture=false. */
-  function forward(stateArr, capture = true) {
-    return tf.tidy(() => {
-      const ns = st.sensorNeurons.length, ni = st.interNeurons.length, nm = st.motorNeurons.length;
-      const A = st.config.actions.length;
-      /* st.vars is the flat trainable array [W1, W2, W3, b2, b3, W4, b4]
-         (the shape optimizer.minimize() and getWeights() expect). */
-      const [W1, W2, W3, b2, b3, W4, b4] = st.vars;
-
-      /* L1 sensors: value = sign*gain*x[feature] + bias, then relu */
-      const sActs = st.sensorNeurons.map((n) => {
-        const t = n.tuning || {};
-        const idx = Math.min(Math.max(Number.isFinite(t.input) ? t.input : 0, 0),
-          st.config.features.length - 1);
-        const xv = Number.isFinite(stateArr[idx]) ? stateArr[idx] : 0;
-        return Math.max(0, (t.sign || 1) * (t.gain || 1) * xv + (Number(n.bias) || 0));
-      });
-      const s = tf.tensor1d(sActs).reshape([1, ns]);
-
-      const h2 = tf.relu(tf.add(tf.matMul(s, W1).reshape([ni]), b2));
-      const h2r = h2.reshape([1, ni]);
-      const h3m = tf.matMul(h2r, W2);                   // [1, M]
-      const h3s = tf.matMul(s, W3);                     // [1, M]
-      const h3 = tf.relu(tf.add(tf.add(h3m, h3s), b3)); // [1, M]
-
-      const logits = tf.add(tf.matMul(h3, W4).reshape([A]), b4);
-      const probs = tf.softmax(tf.div(logits, TEMPERATURE));
-
-      if (capture) {
-        st.lastHidden.sensors = sActs;
-        st.lastHidden.interneurons = Array.from(h2.dataSync());
-        st.lastHidden.motors = Array.from(h3.dataSync());
-      }
-
-      return { probs, logits };
+  /* L1 sensors (fixed tuning, not trainable): value = sign*gain*x[feature] +
+     bias, then relu. Plain JS, so a whole episode can be batched below. */
+  function sensorActs(stateArr) {
+    return st.sensorNeurons.map((n) => {
+      const t = n.tuning || {};
+      const idx = Math.min(Math.max(Number.isFinite(t.input) ? t.input : 0, 0),
+        st.config.features.length - 1);
+      const xv = Number.isFinite(stateArr[idx]) ? stateArr[idx] : 0;
+      return Math.max(0, (t.sign || 1) * (t.gain || 1) * xv + (Number(n.bias) || 0));
     });
+  }
+
+  /* Trainable part of the network on a batch of sensor rows s [B, S].
+     Returns { h2 [B, I], h3 [B, M], logits [B, A] }. Call inside a tidy. */
+  function net(s) {
+    /* st.vars is the flat trainable array [W1, W2, W3, b2, b3, W4, b4]
+       (the shape optimizer.minimize() and getWeights() expect). */
+    const [W1, W2, W3, b2, b3, W4, b4] = st.vars;
+    const h2 = tf.relu(tf.add(tf.matMul(s, W1), b2));                         // [B, I]
+    const h3 = tf.relu(tf.add(tf.add(tf.matMul(h2, W2), tf.matMul(s, W3)), b3)); // [B, M]
+    const logits = tf.div(tf.add(tf.matMul(h3, W4), b4), TEMPERATURE);       // [B, A]
+    return { h2, h3, logits };
+  }
+
+  /* One live decision: returns the action probabilities as a plain array and
+     stores the sensor/interneuron/motor activations in st.lastHidden for the
+     overlay. Every tensor is disposed before returning (no per-step leak). */
+  function forward(stateArr) {
+    const sActs = sensorActs(stateArr);
+    const out = tf.tidy(() => {
+      const { h2, h3, logits } = net(tf.tensor2d([sActs]));
+      return [h2.dataSync(), h3.dataSync(), tf.softmax(logits).dataSync()];
+    });
+    st.lastHidden.sensors = sActs;
+    st.lastHidden.interneurons = Array.from(out[0]);
+    st.lastHidden.motors = Array.from(out[1]);
+    return Array.from(out[2]);
   }
 
   /* ------------------------------------------------------------- public API */
@@ -266,8 +271,6 @@
      network from the same loaded connectome + readout seed, so "Reset" in a
      game honestly restarts learning from the seeded initialization. */
   function reset() {
-    for (const v of st.vars) v.dispose();
-    if (st.optimizer) st.optimizer.dispose();
     st.epSteps = []; st.pendingReward = 0;
     st.baseline = 0; st.lastScore = 0; st.history = []; st.episode = 0;
     st.lastProbs = null; st.lastAction = 0;
@@ -278,8 +281,7 @@
   /* Sample an action from the policy (train mode) or take argmax (greedy). */
   function act(stateArr) {
     flushPending();
-    const f = forward(stateArr);
-    const p = Array.from(f.probs.dataSync());
+    const p = forward(stateArr);
     st.lastProbs = p;
 
     let actionIdx = 0;
@@ -333,21 +335,24 @@
       for (let t = T - 1; t >= 0; t--) { run = steps[t].reward + GAMMA * run; G[t] = run; }
       const baseline = st.baseline;
 
+      /* The whole episode is replayed as ONE batched graph [T, ...] rather
+         than T tiny per-step graphs — same loss, far fewer ops/kernels. */
+      const S = steps.map((s) => sensorActs(s.state));
+      const actions = steps.map((s) => s.actionIdx);
+      const adv = G.map((g) => g - baseline);
+      const A = st.config.actions.length;
+
       const lossFn = () => tf.tidy(() => {
-        let loss = tf.scalar(0);
-        for (let t = 0; t < T; t++) {
-          const f = forward(steps[t].state, false);
-          const p = f.probs;                                  // [A]
-          const logP = tf.log(tf.gather(p, tf.scalar(steps[t].actionIdx, "int32")));
-          const entropy = tf.neg(tf.sum(tf.mul(p, tf.log(tf.add(p, 1e-9)))));
-          const adv = G[t] - baseline;
-          const term = tf.sub(tf.mul(tf.neg(logP), adv), tf.mul(entropy, ENTROPY_BETA));
-          loss = tf.add(loss, term);
-        }
-        return tf.div(loss, Math.max(T, 1));
+        const { logits } = net(tf.tensor2d(S));                 // [T, A]
+        const logP = tf.logSoftmax(logits);                      // [T, A]
+        const p = tf.exp(logP);
+        const logPa = tf.sum(tf.mul(logP, tf.oneHot(tf.tensor1d(actions, "int32"), A)), 1); // [T]
+        const entropy = tf.neg(tf.sum(tf.mul(p, logP), 1));      // [T]
+        const pg = tf.mul(tf.neg(logPa), tf.tensor1d(adv));      // [T]
+        return tf.mean(tf.sub(pg, tf.mul(entropy, ENTROPY_BETA)));
       });
 
-      st.optimizer.minimize(lossFn, true, st.vars);
+      st.optimizer.minimize(lossFn, false, st.vars);
     }
     st.epSteps = [];
   }
