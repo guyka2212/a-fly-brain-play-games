@@ -161,8 +161,10 @@ policy, greedy takes argmax (use for demo/playback).
   `tools/microcontroller/`) and the live `fetch_connectome.py` path have never
   been executed against the real APIs in this workspace (they need tokens /
   hardware); they are written to spec but unverified end-to-end.
-- Game pages are verified by `node --check` + serving, not a real browser here;
-  do a browser pass (console clean, episodes advance, activations render) when
-  one is available.
+- Game pages are only smoke-tested in headless Chromium (Playwright, CDN
+  scripts served from local npm copies of the same versions): console clean,
+  episodes advance, overlay populates, `tf.memory()` flat. That smoke test
+  caught open-world dying on its first frame. Still do a pass in a real
+  GPU browser when one is available.
 - Every game duplicates a small HUD/chart/probs helper block (deliberately —
   no shared game-side JS by convention). Keep them in sync by hand.
