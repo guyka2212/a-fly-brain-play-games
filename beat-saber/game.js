@@ -69,6 +69,9 @@
   let lastActionName = null;
   let bestScore = -Infinity;
   let brainViz = null;
+  const GAME_ID = "beat-saber";
+  const SAVE_KEY = "fly-brain:" + GAME_ID + ":v1";       // this browser's saved fly
+  const PRO_URL = "../shared/trained/" + GAME_ID + ".json"; // offline-trained pro
 
   /* ============================ audio (metronome) ========================= */
   let audioCtx = null, musicTimer = null;
@@ -167,6 +170,7 @@
         brainViz = flyBrainViz.create({ container: document.getElementById("brain-panel") });
       }
       brainReady = true;
+      window.flyBrain.enableAutosave(SAVE_KEY, 5);
       return true;
     } catch (e) {
       console.error("fly-brain init failed:", e);
@@ -256,6 +260,8 @@
   function resetBrain() {
     stopMusic();
     window.flyBrain.reset();
+    window.flyBrain.clearSaved(SAVE_KEY);
+    setBestPlay(false);
     if (brainViz) brainViz.rebuild();
     bestScore = -Infinity;
     resetSong();
@@ -658,7 +664,9 @@
   function updateHUD() {
     const stats = brainReady ? window.flyBrain.getStats() : null;
     const rows = [
-      ["episode", stats ? stats.episode : "—"],
+      ["brain", brainName()],
+      ["episodes trained", stats ? stats.episodesTrained : "—"],
+      ["this session", stats ? stats.episode : "—"],
       ["last score", stats ? stats.lastScore : "—"],
       ["avg score", stats ? stats.avgScore : "—"],
       ["best score", bestScore > -Infinity ? bestScore : "—"],
@@ -731,14 +739,71 @@
   const startScreen = document.getElementById("start-screen");
   const note = document.getElementById("load-note");
 
-  async function start() {
+  /* ===================== memory, pro brain, best play ===================== */
+  /* Your fly's brain auto-saves to this browser every 5 episodes and is
+     restored next visit, so learning accumulates across sessions. "Pro" is a
+     brain trained offline (tools/fly-brain-test/train.js, thousands of
+     episodes on exact mirrors of this game's rules); it keeps learning live.
+     Best Play = greedy: always take the top action (its real skill level);
+     Learning = sample from the policy so it keeps exploring and improving. */
+  let bestPlay = false;
+  function setBestPlay(on) {
+    bestPlay = !!on;
+    if (brainReady) window.flyBrain.setMode(bestPlay ? "greedy" : "train");
+    const b = document.getElementById("btn-best");
+    if (b) { b.textContent = bestPlay ? "🎯 Best Play: on" : "📚 Learning (exploring)"; b.classList.toggle("on", bestPlay); }
+  }
+  function proSkill(ev) {
+    if (!ev) return "";
+    if (ev.finishedPct != null) return `; exam on 100 new roads: finishes ${Math.round(ev.finishedPct)}% of 60 s drives`;
+    if (ev.hitRatePct != null) return `; exam on 100 new songs: hits ${Math.round(ev.hitRatePct)}% of notes`;
+    if (ev.allOrbsPct != null) return `; exam on 100 new arenas: clears all 8 orbs in ${Math.round(ev.allOrbsPct)}% of runs`;
+    return "";
+  }
+  async function loadPro() {
+    try {
+      const res = await fetch(PRO_URL);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const pro = await res.json();
+      const info = window.flyBrain.importBrain(pro);
+      window.flyBrain.setBrainLabel("pro");
+      /* play the pro the way it tested best (driving steers by sampling) */
+      setBestPlay(pro.playMode === "greedy");
+      return `🏆 Pro brain loaded — ${info.episodesTrained} episodes of training${proSkill(pro.trainedOffline && (pro.trainedOffline.exam || pro.trainedOffline.eval))}. It keeps learning live.`;
+    } catch (e) {
+      console.warn("pro brain unavailable:", e);
+      return "Pro brain unavailable (" + e.message + ") — this fly keeps training from where it is.";
+    }
+  }
+  function brainName() {
+    if (!brainReady) return "—";
+    return window.flyBrain.getBrainLabel() === "pro" ? "🏆 pro" : "your fly";
+  }
+  /* start-screen hint: offer to continue a saved fly */
+  (function labelContinue() {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(SAVE_KEY) || "null");
+      const btn = document.getElementById("start-fly");
+      if (saved && btn) btn.textContent = `▶ Continue Your Fly (${saved.episodesTrained} episodes trained)`;
+    } catch (e) { /* no storage: keep the default label */ }
+  })();
+
+  async function start(withPro) {
     note.textContent = "loading fly brain…";
     const ok = await ensureBrain();
     if (!ok) { note.textContent = "fly brain failed to load — see console."; return; }
     window.flyBrain.setMode("train");
+    let hello = null;
+    if (withPro) hello = await loadPro();
+    else {
+      const saved = window.flyBrain.restoreSaved(SAVE_KEY);
+      if (saved) hello = `Welcome back — your fly remembers ${saved.episodesTrained} episodes of training.`;
+      setBestPlay(false);
+    }
     started = true; paused = false;
     resetSong();
     startScreen.style.display = "none";
+    if (hello) setTimeout(() => { document.getElementById("status").textContent = hello; }, 0);
     note.textContent = "";
     document.getElementById("status").textContent =
       "The fly is playing. Episodes are 16 beats; it learns each song.";
@@ -763,25 +828,44 @@
     e.target.textContent = on ? "show" : "hide";
     if (brainViz) brainViz.setVisible(!on);
   };
-  document.getElementById("start-fly").onclick = start;
+  document.getElementById("start-fly").onclick = () => start(false);
+  document.getElementById("start-pro").onclick = () => start(true);
+  document.getElementById("btn-pro").onclick = async () => {
+    if (!brainReady) return;
+    document.getElementById("status").textContent = await loadPro();
+  };
+  const bBest = document.getElementById("btn-best");
+  if (bBest) bBest.onclick = () => setBestPlay(!bestPlay);
 
   /* ============================== main loop =============================== */
   /* Brain acts every 100 ms of SONG time (10 decisions/s regardless of the
      speed multiplier), so fast-forward yields more episodes, not a different
-     policy-observation cadence. */
-  let lastTs = 0, hudLast = 0, chartLast = 0, actAcc = 0;
+     policy-observation cadence. The song itself advances in 1/60 s ticks. */
+  let lastTs = 0, hudLast = 0, chartLast = 0, actAcc = 0, simAcc = 0;
+  const SIM_H = 1 / 60;               // song tick, as in the headless mirror
   function frame(ts) {
     const rdt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
     lastTs = ts;
     const dt = rdt * SPEEDS[speedIdx];
 
     if (started && !paused) {
-      songClock += dt;
-      spawnUpTo();
+      /* Advance the song in fixed 1/60 s ticks (exactly like the headless
+         mirror in tools/fly-brain-test/envs.js). Stepping the clock once per
+         frame and then taking several decisions at that frozen moment made
+         timing impossible at 4x/16x or on slow frames — notes never moved
+         between decisions, so even a trained fly missed everything. */
+      simAcc += dt;
+      while (simAcc >= SIM_H) {
+        simAcc -= SIM_H;
+        songClock += SIM_H;
+        spawnUpTo();
+        missNotes();
+        /* cull consumed notes */
+        notes = notes.filter((n) => !n.hit && !n.missed && timeToBeatLine(n.beat) > -HIT_WINDOW);
 
-      actAcc += dt;
-      while (actAcc >= 0.1) {        // 10 decisions per song-second
-        actAcc -= 0.1;
+        actAcc += SIM_H;
+        if (actAcc < 0.1 - 1e-9) continue;   // 10 decisions per song-second
+        actAcc = 0;
         const a = window.flyBrain.act(stateVector());
         lastActionName = a;
         lastProbs = window.flyBrain.getActionProbs() || lastProbs;
@@ -789,16 +873,13 @@
         else if (a === "swingL") trySwing(0);
         else if (a === "swingC") trySwing(1);
         else if (a === "swingR") trySwing(2);
-      }
 
-      missNotes();
-
-      /* cull consumed notes */
-      notes = notes.filter((n) => !n.hit && !n.missed && timeToBeatLine(n.beat) > -HIT_WINDOW);
-
-      if (songClock > EPISODE_BEATS * BEAT) {
-        endSong();
-        resetSong();
+        if (songClock > EPISODE_BEATS * BEAT) {
+          endSong();
+          resetSong();
+          simAcc = 0; actAcc = 0;
+          break;
+        }
       }
     }
 

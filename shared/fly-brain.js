@@ -60,6 +60,9 @@
      excite) while putting the network where some neurons actually fire.
      Biases remain trainable. */
   const HIDDEN_BIAS_SCALE = 0.2;
+  /* Stability: minimum advantage scale (reward units) and max gradient norm. */
+  const ADV_STD_FLOOR = 0.1;
+  const GRAD_CLIP = 1.0;
 
   /* mulberry32 — deterministic PRNG for reproducible initial readout weights. */
   function mulberry32(a) {
@@ -82,6 +85,9 @@
     epSteps: [],       // [{state, actionIdx, reward, pending}]
     pendingReward: 0,
     baseline: 0,       // EMA of episode scores (HUD/stats only)
+    trainedBefore: 0,  // episodes a loaded brain had already trained
+    autosave: null,    // {key, everyN} when the page enabled saving
+    brainLabel: null,  // e.g. "pro" — carried into saves
     retStats: null,    // {b: per-step running return-to-go, var: advantage scale}
     lastScore: 0,
     history: [],       // [{ep, score}]
@@ -276,6 +282,7 @@
     }
     st.rawData = data;
     st.epSteps = []; st.pendingReward = 0;
+    st.retStats = null; st.trainedBefore = 0;
     return buildModel(data);
   }
 
@@ -285,7 +292,7 @@
   function reset() {
     st.epSteps = []; st.pendingReward = 0;
     st.baseline = 0; st.lastScore = 0; st.history = []; st.episode = 0;
-    st.retStats = null;
+    st.retStats = null; st.trainedBefore = 0; st.brainLabel = null;
     st.lastProbs = null; st.lastAction = 0;
     st.lastHidden = { sensors: [], interneurons: [], motors: [] };
     if (st.rawData) buildModel(st.rawData);
@@ -371,7 +378,11 @@
         sq += adv[t] * adv[t];
       }
       rs.var = rs.var ? (1 - BASELINE_ALPHA) * rs.var + BASELINE_ALPHA * (sq / T) : sq / T;
-      const rStd = Math.sqrt(Math.max(rs.var, 1e-6));
+      /* Floor the scale: once play is consistent, return differences are
+         tiny, and dividing by their tiny spread would blow noise back up to
+         full-size updates (the policy then random-walks away from good
+         play). Below ADV_STD_FLOOR reward units, updates shrink instead. */
+      const rStd = Math.max(Math.sqrt(rs.var), ADV_STD_FLOOR);
       for (let t = 0; t < T; t++) adv[t] /= rStd;
       const A = st.config.actions.length;
 
@@ -385,14 +396,35 @@
         return tf.mean(tf.sub(pg, tf.mul(entropy, ENTROPY_BETA)));
       });
 
-      st.optimizer.minimize(lossFn, false, st.vars);
+      /* clip the global gradient norm: one freak episode can't wreck the policy */
+      const { value, grads } = tf.variableGrads(lossFn, st.vars);
+      const names = Object.keys(grads);
+      const norm = tf.tidy(() => tf.sqrt(tf.addN(names.map((k) => tf.sum(tf.square(grads[k]))))).dataSync()[0]);
+      const k = norm > GRAD_CLIP ? GRAD_CLIP / norm : 1;
+      const clipped = {};
+      for (const name of names) clipped[name] = k === 1 ? grads[name] : tf.mul(grads[name], k);
+      st.optimizer.applyGradients(clipped);
+      value.dispose();
+      for (const name of names) { grads[name].dispose(); if (k !== 1) clipped[name].dispose(); }
     }
     st.epSteps = [];
+    if (st.autosave && st.episode % st.autosave.everyN === 0) saveNow();
+  }
+
+  function saveNow() {
+    try {
+      if (!window.localStorage) return;
+      const b = window.flyBrain.exportBrain({
+        history: st.history.slice(-200), savedAt: new Date().toISOString(), label: st.brainLabel || null,
+      });
+      window.localStorage.setItem(st.autosave.key, JSON.stringify(b));
+    } catch (e) { /* storage full / blocked: keep playing without saving */ }
   }
 
   function getStats() {
     return {
       episode: st.episode,
+      episodesTrained: st.trainedBefore + st.episode,   // incl. a loaded brain's
       lastScore: Math.round(st.lastScore * 100) / 100,
       avgScore: st.history.length
         ? Math.round(st.history.reduce((a, h) => a + h.score, 0) / st.history.length * 100) / 100
@@ -446,6 +478,77 @@
         connections: n.connections || [],
       })) : [];
     },
+    /* Overwrite every trainable tensor (same order/sizes as getWeights()).
+       Adam's moment estimates and the advantage baseline belong to the old
+       weights, so both restart. */
+    setWeights(arrays) {
+      if (!Array.isArray(arrays) || arrays.length !== st.vars.length) {
+        throw new Error("setWeights: expected " + st.vars.length + " arrays");
+      }
+      st.vars.forEach((v, i) => {
+        if (!arrays[i] || arrays[i].length !== v.size) {
+          throw new Error("setWeights: tensor " + i + " needs " + v.size + " values");
+        }
+      });
+      tf.tidy(() => st.vars.forEach((v, i) => v.assign(tf.tensor(arrays[i], v.shape))));
+      if (st.optimizer) st.optimizer.dispose();
+      st.optimizer = tf.train.adam(st.config.learningRate || LR);
+      st.retStats = null;
+      st.epSteps = []; st.pendingReward = 0;
+    },
+    /* A whole trained brain as plain JSON (for saving / shipping). */
+    exportBrain(extra = {}) {
+      return Object.assign({
+        format: "fly-brain/1",
+        features: st.config.features.slice(),
+        actions: st.config.actions.slice(),
+        pools: [st.sensorNeurons.length, st.interNeurons.length, st.motorNeurons.length],
+        episodesTrained: st.trainedBefore + st.episode,
+        weights: st.vars.map((v) => Array.from(v.dataSync(), (x) => Math.round(x * 1e5) / 1e5)),
+      }, extra);
+    },
+    /* Load a brain saved by exportBrain(). Refuses one built for a different
+       game (features/actions) or a different connectome (pool sizes). */
+    importBrain(b) {
+      const same = (x, y) => Array.isArray(x) && x.length === y.length && x.every((v, i) => v === y[i]);
+      if (!b || b.format !== "fly-brain/1") throw new Error("importBrain: not a fly-brain/1 file");
+      if (!same(b.features, st.config.features) || !same(b.actions, st.config.actions)) {
+        throw new Error("importBrain: brain was trained for a different game");
+      }
+      if (!same(b.pools, [st.sensorNeurons.length, st.interNeurons.length, st.motorNeurons.length])) {
+        throw new Error("importBrain: brain was trained on a different connectome");
+      }
+      this.setWeights(b.weights);
+      st.trainedBefore = (Number(b.episodesTrained) || 0) - st.episode;
+      return { episodesTrained: Number(b.episodesTrained) || 0 };
+    },
+    /* ---- memory between visits (browser localStorage; best-effort) ----
+       enableAutosave(key, everyN): after every N-th episode, save the brain +
+       its learning curve under `key`. restoreSaved(key): load it back
+       (returns the save info or null). clearSaved(key): forget it.
+       Storage can be unavailable (private mode, blocked) — every access is
+       guarded and simply does nothing then. */
+    enableAutosave(key, everyN = 5) { st.autosave = { key, everyN: Math.max(1, everyN) }; },
+    restoreSaved(key) {
+      try {
+        const raw = window.localStorage && window.localStorage.getItem(key);
+        if (!raw) return null;
+        const b = JSON.parse(raw);
+        const info = this.importBrain(b);
+        if (Array.isArray(b.history)) st.history = b.history.slice(-200);
+        st.brainLabel = b.label || null;
+        if (b.history && b.history.length) st.lastScore = b.history[b.history.length - 1].score;
+        return Object.assign(info, { savedAt: b.savedAt || null, label: b.label || null });
+      } catch (e) {
+        console.warn("flyBrain: saved brain not restored", e);
+        return null;
+      }
+    },
+    clearSaved(key) { try { window.localStorage && window.localStorage.removeItem(key); } catch (e) { /* ignore */ } },
+    setBrainLabel(l) { st.brainLabel = l || null; },
+    getBrainLabel() { return st.brainLabel; },
+    /* Drop the open episode without learning from it (evaluation runs). */
+    discardEpisode() { st.epSteps = []; st.pendingReward = 0; },
     getActionProbs() { return st.lastProbs; },
     getLastAction() { return st.config ? st.config.actions[st.lastAction] : null; },
     setMode(m) { st.mode = m === "greedy" ? "greedy" : "train"; },

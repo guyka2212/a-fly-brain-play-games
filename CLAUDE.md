@@ -37,6 +37,11 @@ shared/thumbs/*.jpg            # hub-page screenshots; retake when a game's look
 tools/fly-brain-test/run.js    # headless Node regression harness (npm test)
 tools/fly-brain-test/verify.js # source / agency / learning checks (npm run verify)
                                # -> rewrites tools/fly-brain-test/RESULTS.md
+tools/fly-brain-test/envs.js   # headless mirrors of the 3 games (exact rules,
+                               # sensors, rewards) + skill metrics; shared by
+                               # verify.js and train.js. Change with game.js!
+tools/fly-brain-test/train.js  # long offline training -> shared/trained/<game>.json
+shared/trained/<game>.json     # "pro" brains (exportBrain format) the pages load
 tools/neuron-fetch/
   build_curated.py             # offline, deterministic builder (SEED 20260911), no network
   fetch_connectome.py          # live pull from Janelia neuPrint hemibrain (needs token)
@@ -58,6 +63,9 @@ the harness. Do not add npm tooling for the site itself.
 npm install        # first time only (installs @tensorflow/tfjs for Node)
 npm test           # 50 fake episodes; exit 0 = training loop + API verified
 npm run verify     # ~5 min: data source, agency, multi-seed learning checks
+
+# Retrain a "pro" brain (writes shared/trained/<game>.json; minutes)
+node tools/fly-brain-test/train.js beat-saber 6000
 
 # Serve locally — MUST run from repo root (see "Relative paths" gotcha below)
 python -m http.server 8000
@@ -92,7 +100,15 @@ activations render.
   baseline biased every advantage by the score's sign and eroded good policies),
   one gradient step applied. Tuning constants live at the top of the file:
   `ENTROPY_BETA 0.02`, `TEMPERATURE 1.0`, `LR 0.02`, `BASELINE_ALPHA 0.15`,
-  `GAMMA 0.98`, `HIDDEN_BIAS_SCALE 0.2`.
+  `GAMMA 0.98`, `HIDDEN_BIAS_SCALE 0.2`, `ADV_STD_FLOOR 0.1`, `GRAD_CLIP 1.0`.
+  The floor + clip matter: without them, once play got consistent the
+  standardised advantages amplified noise and good policies collapsed (open-world
+  went from 95% to 15% all-orbs in 100 episodes).
+- **Pro brains:** `train.js` evaluates on unseen layouts both greedy and sampled
+  and keeps the most *skilled* brain (real metrics, not shaped reward), storing
+  its best `playMode` (greedy or sampled), which the page uses for the pro.
+  A half-trained driver may only steer well sampled (it dithers between
+  steerL/hold/steerR); a well-trained one also drives greedy.
 - **Live hidden layers:** the connectome's resting thresholds (−1.5…−3) dwarf the
   sensor drive (~0…1.3), so used raw every interneuron/motor ReLU was dead — zero
   activity, zero gradient, a state-blind policy. `HIDDEN_BIAS_SCALE` rescales them
@@ -125,7 +141,14 @@ flyBrain.endEpisode();                    // on death / goal: gradient update + 
 Read APIs for HUD/overlays: `getStats()` (episode, avgScore, lastScore, history,
 baseline, pool sizes), `getActionProbs()`, `getHidden()`, `getActivity(topN)`,
 `getLastAction()`. Control: `setMode('train' | 'greedy')` — train samples from the
-policy, greedy takes argmax (use for demo/playback).
+policy, greedy takes argmax (use for demo/playback; learning continues in both).
+
+Brains and memory: `getWeights()` / `setWeights(arrays)`, `exportBrain(extra)` /
+`importBrain(json)` (refuses a brain for other features/actions/pool sizes),
+`enableAutosave(key, everyN)` + `restoreSaved(key)` + `clearSaved(key)`
+(localStorage, best-effort), `setBrainLabel('pro')`, `discardEpisode()` (drop
+an evaluation episode without learning from it). Pages save under
+`fly-brain:<game>:v1`; "Reset Brain" clears it.
 
 ## Adding a game — checklist
 
@@ -186,12 +209,6 @@ policy, greedy takes argmax (use for demo/playback).
 - Every game duplicates a small HUD/chart/probs helper block (deliberately —
   no shared game-side JS by convention). Keep them in sync by hand. Purely
   visual building blocks live in `shared/scene-fx.js` instead.
-- Driving-sim episodes start at the track's steepest bend (`centreXPrime(0)`
-  is the maximum slope, 0.86), so an untrained fly crashes within ~0.2 s and
-  early training looks like constant crashing. The `restart()` comment
-  promises a random road phase per episode that `newSim()` never applies.
-  Fixing it changes the learning environment: update the driving mirror in
-  `verify.js` in the same change.
 - The committed GLBs were produced by a builder that exported all-zero
   normals and a wrong up-axis rotation. `build_models.py` is fixed, but
   Blender wasn't available, so the GLBs were corrected in place (exact 180°
