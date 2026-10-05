@@ -1,5 +1,5 @@
-/* envs.js — headless mirrors of the three games, shared by verify.js
- * (learning check) and train.js (long offline training of "pro" brains).
+/* envs.js — headless mirrors of the three games, used by verify.js
+ * (learning check).
  *
  * Each mirror reproduces its game.js EXACTLY: same sensor features, same
  * reward shaping, same action semantics, same timing. If you change a game's

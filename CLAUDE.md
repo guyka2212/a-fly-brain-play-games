@@ -39,9 +39,7 @@ tools/fly-brain-test/verify.js # source / agency / learning checks (npm run veri
                                # -> rewrites tools/fly-brain-test/RESULTS.md
 tools/fly-brain-test/envs.js   # headless mirrors of the 3 games (exact rules,
                                # sensors, rewards) + skill metrics; shared by
-                               # verify.js and train.js. Change with game.js!
-tools/fly-brain-test/train.js  # long offline training -> shared/trained/<game>.json
-shared/trained/<game>.json     # "pro" brains (exportBrain format) the pages load
+                               # verify.js. Change with game.js!
 tools/neuron-fetch/
   build_curated.py             # offline, deterministic builder (SEED 20260911), no network
   fetch_connectome.py          # live pull from Janelia neuPrint hemibrain (needs token)
@@ -63,9 +61,6 @@ the harness. Do not add npm tooling for the site itself.
 npm install        # first time only (installs @tensorflow/tfjs for Node)
 npm test           # 50 fake episodes; exit 0 = training loop + API verified
 npm run verify     # ~5 min: data source, agency, multi-seed learning checks
-
-# Retrain a "pro" brain (writes shared/trained/<game>.json; minutes)
-node tools/fly-brain-test/train.js beat-saber 6000
 
 # Serve locally — MUST run from repo root (see "Relative paths" gotcha below)
 python -m http.server 8000
@@ -104,11 +99,10 @@ activations render.
   The floor + clip matter: without them, once play got consistent the
   standardised advantages amplified noise and good policies collapsed (open-world
   went from 95% to 15% all-orbs in 100 episodes).
-- **Pro brains:** `train.js` evaluates on unseen layouts both greedy and sampled
-  and keeps the most *skilled* brain (real metrics, not shaped reward), storing
-  its best `playMode` (greedy or sampled), which the page uses for the pro.
-  A half-trained driver may only steer well sampled (it dithers between
-  steerL/hold/steerR); a well-trained one also drives greedy.
+- **No pre-trained brains:** by the owner's choice the fly only learns live from
+  its own mistakes (plus its saved progress). A "Watch the Pro" mode with
+  offline-trained brains existed briefly and was removed; pages discard a saved
+  brain labelled "pro" and start that fly from scratch.
 - **Live hidden layers:** the connectome's resting thresholds (−1.5…−3) dwarf the
   sensor drive (~0…1.3), so used raw every interneuron/motor ReLU was dead — zero
   activity, zero gradient, a state-blind policy. `HIDDEN_BIAS_SCALE` rescales them
@@ -146,7 +140,7 @@ policy, greedy takes argmax (use for demo/playback; learning continues in both).
 Brains and memory: `getWeights()` / `setWeights(arrays)`, `exportBrain(extra)` /
 `importBrain(json)` (refuses a brain for other features/actions/pool sizes),
 `enableAutosave(key, everyN)` + `restoreSaved(key)` + `clearSaved(key)`
-(localStorage, best-effort), `setBrainLabel('pro')`, `discardEpisode()` (drop
+(localStorage, best-effort), `setBrainLabel(l)`, `discardEpisode()` (drop
 an evaluation episode without learning from it). Pages save under
 `fly-brain:<game>:v1`; "Reset Brain" clears it.
 

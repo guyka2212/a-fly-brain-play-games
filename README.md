@@ -65,10 +65,8 @@ python -m http.server 8000
 # then open http://localhost:8000/
 ```
 
-Every game page can also **🏆 Watch the Pro** — the same fly brain after
-thousands of practice games, trained offline on exact copies of the game
-rules (`node tools/fly-brain-test/train.js <game> [episodes]`, output in
-`shared/trained/`). Your own fly is saved in the browser and keeps improving
+The fly only ever learns from its own mistakes, live in your browser — no
+pre-trained brains. Its brain is saved in the browser and keeps improving
 on every visit; "Reset Brain" starts it over.
 
 `npm test` runs a headless Node regression harness for the agent

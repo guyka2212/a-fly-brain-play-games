@@ -50,7 +50,6 @@
   let brainViz = null;
   const GAME_ID = "open-world";
   const SAVE_KEY = "fly-brain:" + GAME_ID + ":v1";       // this browser's saved fly
-  const PRO_URL = "../shared/trained/" + GAME_ID + ".json"; // offline-trained pro
 
   /* ============================== game state ============================== */
   let agent, orbs, visited, visitedCount, epClock, collected;
@@ -627,7 +626,6 @@
     const stats = brainReady ? window.flyBrain.getStats() : null;
     const explored = Math.round(100 * visitedCount / (GRID * GRID));
     const rows = [
-      ["brain", brainName()],
       ["episodes trained", stats ? stats.episodesTrained : "—"],
       ["this session", stats ? stats.episode : "—"],
       ["last score", stats ? stats.lastScore : "—"],
@@ -701,13 +699,11 @@
   const startScreen = document.getElementById("start-screen");
   const note = document.getElementById("load-note");
 
-  /* ===================== memory, pro brain, best play ===================== */
+  /* ========================= memory, best play ========================= */
   /* Your fly's brain auto-saves to this browser every 5 episodes and is
-     restored next visit, so learning accumulates across sessions. "Pro" is a
-     brain trained offline (tools/fly-brain-test/train.js, thousands of
-     episodes on exact mirrors of this game's rules); it keeps learning live.
-     Best Play = greedy: always take the top action (its real skill level);
-     Learning = sample from the policy so it keeps exploring and improving. */
+     restored next visit, so it keeps learning from its own mistakes across
+     sessions. Best Play = greedy: always take the top action (its current
+     skill); Learning = sample from the policy so it keeps exploring. */
   let bestPlay = false;
   function setBestPlay(on) {
     bestPlay = !!on;
@@ -715,53 +711,31 @@
     const b = document.getElementById("btn-best");
     if (b) { b.textContent = bestPlay ? "🎯 Best Play: on" : "📚 Learning (exploring)"; b.classList.toggle("on", bestPlay); }
   }
-  function proSkill(ev) {
-    if (!ev) return "";
-    if (ev.finishedPct != null) return `; exam on 100 new roads: finishes ${Math.round(ev.finishedPct)}% of 60 s drives`;
-    if (ev.hitRatePct != null) return `; exam on 100 new songs: hits ${Math.round(ev.hitRatePct)}% of notes`;
-    if (ev.allOrbsPct != null) return `; exam on 100 new arenas: clears all 8 orbs in ${Math.round(ev.allOrbsPct)}% of runs`;
-    return "";
-  }
-  async function loadPro() {
-    try {
-      const res = await fetch(PRO_URL);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const pro = await res.json();
-      const info = window.flyBrain.importBrain(pro);
-      window.flyBrain.setBrainLabel("pro");
-      /* play the pro the way it tested best (driving steers by sampling) */
-      setBestPlay(pro.playMode === "greedy");
-      return `🏆 Pro brain loaded — ${info.episodesTrained} episodes of training${proSkill(pro.trainedOffline && (pro.trainedOffline.exam || pro.trainedOffline.eval))}. It keeps learning live.`;
-    } catch (e) {
-      console.warn("pro brain unavailable:", e);
-      return "Pro brain unavailable (" + e.message + ") — this fly keeps training from where it is.";
-    }
-  }
-  function brainName() {
-    if (!brainReady) return "—";
-    return window.flyBrain.getBrainLabel() === "pro" ? "🏆 pro" : "your fly";
-  }
   /* start-screen hint: offer to continue a saved fly */
   (function labelContinue() {
     try {
       const saved = JSON.parse(window.localStorage.getItem(SAVE_KEY) || "null");
       const btn = document.getElementById("start-fly");
-      if (saved && btn) btn.textContent = `▶ Continue Your Fly (${saved.episodesTrained} episodes trained)`;
+      if (saved && btn && saved.label !== "pro") btn.textContent = `▶ Continue Your Fly (${saved.episodesTrained} episodes trained)`;
     } catch (e) { /* no storage: keep the default label */ }
   })();
 
-  async function start(withPro) {
+  async function start() {
     note.textContent = "loading fly brain…";
     const ok = await ensureBrain();
     if (!ok) { note.textContent = "fly brain failed to load — see console."; return; }
     window.flyBrain.setMode("train");
     let hello = null;
-    if (withPro) hello = await loadPro();
-    else {
-      const saved = window.flyBrain.restoreSaved(SAVE_KEY);
-      if (saved) hello = `Welcome back — your fly remembers ${saved.episodesTrained} episodes of training.`;
-      setBestPlay(false);
+    const saved = window.flyBrain.restoreSaved(SAVE_KEY);
+    if (saved && saved.label === "pro") {
+      /* a brain saved while the (removed) offline "pro" was loaded is not
+         this fly's own learning: start it from scratch instead */
+      window.flyBrain.reset();
+      window.flyBrain.clearSaved(SAVE_KEY);
+    } else if (saved) {
+      hello = `Welcome back — your fly remembers ${saved.episodesTrained} episodes of training.`;
     }
+    setBestPlay(false);
     started = true; paused = false;
     resetWorld();
     startScreen.style.display = "none";
@@ -788,12 +762,7 @@
     e.target.textContent = on ? "show" : "hide";
     if (brainViz) brainViz.setVisible(!on);
   };
-  document.getElementById("start-fly").onclick = () => start(false);
-  document.getElementById("start-pro").onclick = () => start(true);
-  document.getElementById("btn-pro").onclick = async () => {
-    if (!brainReady) return;
-    document.getElementById("status").textContent = await loadPro();
-  };
+  document.getElementById("start-fly").onclick = () => start();
   const bBest = document.getElementById("btn-best");
   if (bBest) bBest.onclick = () => setBestPlay(!bestPlay);
 
