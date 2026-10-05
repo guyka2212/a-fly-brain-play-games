@@ -29,7 +29,10 @@ shared/scene-fx.js             # cosmetic three.js helpers (global `flyFx`): ton
                                # textures, stars. Never touches the brain/sim.
 shared/assets-loader.js        # tiny GLB parser (global `flyAssets`) -> PBR meshes
 shared/assets/*.glb            # Blender-built meshes (tools/blender-assets/)
-shared/brain-viz.js            # 3D "live brain" panel (global `flyBrainViz`)
+shared/brain-viz.js            # 3D "live brain" panel (global `flyBrainViz`): a
+                               # schematic fly CNS (optic lobes, central brain,
+                               # neck, VNC T1-T3); neurons placed by cell type,
+                               # glow when firing, impulses travel the wiring
 shared/thumbs/*.jpg            # hub-page screenshots; retake when a game's look changes
 tools/fly-brain-test/run.js    # headless Node regression harness (npm test)
 tools/fly-brain-test/verify.js # source / agency / learning checks (npm run verify)
@@ -82,11 +85,18 @@ activations render.
   `tuning {input, sign, gain}`) → interneurons → motor pool, plus direct sensor→motor
   shortcut edges (the "giant fibre" path). Motor→action readout weights are randomly
   seeded (mulberry32, seed 1234) and trainable.
-- **Training:** Monte-Carlo policy gradient (REINFORCE) with an average-reward
-  baseline, small entropy bonus, and Adam. Per episode: states are replayed through
-  the *frozen* network, discounted returns computed, one gradient step applied.
-  Tuning constants live at the top of the file: `ENTROPY_BETA 0.02`,
-  `TEMPERATURE 1.0`, `LR 0.02`, `BASELINE_ALPHA 0.15`, `GAMMA 0.98`.
+- **Training:** Monte-Carlo policy gradient (REINFORCE) with a small entropy bonus
+  and Adam. Per episode: states are replayed through the *frozen* network,
+  discounted returns G_t computed, advantages `(G_t − b_t)/σ` against a
+  **time-indexed** running baseline `b_t` (same scale as G_t — an episode-total
+  baseline biased every advantage by the score's sign and eroded good policies),
+  one gradient step applied. Tuning constants live at the top of the file:
+  `ENTROPY_BETA 0.02`, `TEMPERATURE 1.0`, `LR 0.02`, `BASELINE_ALPHA 0.15`,
+  `GAMMA 0.98`, `HIDDEN_BIAS_SCALE 0.2`.
+- **Live hidden layers:** the connectome's resting thresholds (−1.5…−3) dwarf the
+  sensor drive (~0…1.3), so used raw every interneuron/motor ReLU was dead — zero
+  activity, zero gradient, a state-blind policy. `HIDDEN_BIAS_SCALE` rescales them
+  (order preserved); `npm test` asserts both layers fire for some inputs.
 - **Dependency:** TF.js UMD build exposing global `tf` (CDN script tag, e.g.
   `@tensorflow/tfjs@4.20.0`) must load **before** `shared/fly-brain.js`.
 

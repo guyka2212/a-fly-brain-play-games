@@ -60,7 +60,7 @@
   .neuron.motor .fill { background: var(--good); }
 
   .chart { width: 100%; height: 170px; display: block; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; }
-  .brain-panel { width: 100%; height: 240px; background: #10151c; border: 1px solid var(--edge); border-radius: 6px; overflow: hidden; }
+  .brain-panel { width: 100%; height: 360px; background: #0b0f17; border: 1px solid var(--edge); border-radius: 6px; overflow: hidden; }
   .brain-panel canvas { display: block; }
   .legend { color: var(--dim); font-size: 11px; margin-top: 6px; line-height: 1.6; }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
@@ -120,7 +120,7 @@
     <div class="card">
       <h2>Live brain <button id="btn-viz" style="float:right; padding:2px 8px; font-size:11px">hide</button></h2>
       <div id="brain-panel" class="brain-panel"></div>
-      <div class="legend">one node per neuron at its stored position — <span class="dot" style="background:#d29922"></span>sensors (outer shell) · <span class="dot" style="background:#a371f7"></span>interneurons (mid) · <span class="dot" style="background:var(--good)"></span>motor core · rings = spikes · drag to orbit. Positions are the deterministic illustrative layout, not real anatomy.</div>
+      <div class="legend">the fly's central nervous system — brain on top, nerve cord below. <span class="dot" style="background:#ffb347"></span>sensory inputs (optic lobes) · <span class="dot" style="background:#b98cff"></span>interneurons (giant fibres, descending, local) · <span class="dot" style="background:#4dff9a"></span>motor neurons (leg / jump / flight, in the cord). Glowing = firing now; sparks = signals travelling along connections; drag to orbit. Regions are schematic and each neuron is placed by its cell type — not measured soma positions.</div>
     </div>
     <div class="card">
       <h2>Who is firing</h2>

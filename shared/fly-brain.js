@@ -19,11 +19,13 @@
  *   Motor→action readout weights *and* all seeded weights are trainable, so the
  *   fly brain adapts to each game instead of doing fixed graph propagation.
  *
- * Training: Monte-Carlo policy gradient (REINFORCE) with an average-reward
- * baseline and a small entropy bonus. At episode end the stored states are
- * replayed through the (unchanged) network as one batched graph and the loss
- *     Σ_t [ (G_t - baseline) · -log π(a_t|s_t) ] − β·Σ_t entropy
- * is back-propagated and applied with Adam.
+ * Training: Monte-Carlo policy gradient (REINFORCE) with a time-indexed
+ * return baseline and a small entropy bonus. At episode end the stored states
+ * are replayed through the (unchanged) network as one batched graph and the loss
+ *     Σ_t [ A_t · -log π(a_t|s_t) ] − β·Σ_t entropy,
+ *     A_t = (G_t − b_t) / σ    (b_t = running return-to-go at step t, σ = running std)
+ * is back-propagated and applied with Adam. Connectome resting thresholds are
+ * scaled by HIDDEN_BIAS_SCALE so interneurons / motor neurons actually fire.
  *
  * API for games:
  *   await flyBrain.init(gameConfig)   -> {sensors, interneurons, motors}
@@ -49,6 +51,15 @@
   const LR = 0.02;
   const BASELINE_ALPHA = 0.15;
   const GAMMA = 0.98;
+  /* The connectome's resting thresholds (biases ~ -1.5 .. -3) are on a much
+     larger scale than the drive the tuned sensors deliver (~0 .. 1.3 summed
+     input per interneuron). Used as-is, every interneuron and motor ReLU sat
+     below threshold for every input: zero activity, zero gradient, and a
+     policy that could only learn state-independent action biases. Scaling the
+     seeded thresholds keeps their relative order (which neurons are harder to
+     excite) while putting the network where some neurons actually fire.
+     Biases remain trainable. */
+  const HIDDEN_BIAS_SCALE = 0.2;
 
   /* mulberry32 — deterministic PRNG for reproducible initial readout weights. */
   function mulberry32(a) {
@@ -70,7 +81,8 @@
     episode: 0,
     epSteps: [],       // [{state, actionIdx, reward, pending}]
     pendingReward: 0,
-    baseline: 0,
+    baseline: 0,       // EMA of episode scores (HUD/stats only)
+    retStats: null,    // {b: per-step running return-to-go, var: advantage scale}
     lastScore: 0,
     history: [],       // [{ep, score}]
     mode: "train",
@@ -166,8 +178,8 @@
       const t = mIdx.get(c.target);
       if (t !== undefined) w3[S.indexOf(s)][t] += Number(c.weight);
     }
-    const b2 = I.map((n) => Number(n.bias) || 0);
-    const b3 = M.map((n) => Number(n.bias) || 0);
+    const b2 = I.map((n) => (Number(n.bias) || 0) * HIDDEN_BIAS_SCALE);
+    const b3 = M.map((n) => (Number(n.bias) || 0) * HIDDEN_BIAS_SCALE);
 
     /* readout [M, A] — seeded, trainable */
     const rand = mulberry32(1234);
@@ -273,6 +285,7 @@
   function reset() {
     st.epSteps = []; st.pendingReward = 0;
     st.baseline = 0; st.lastScore = 0; st.history = []; st.episode = 0;
+    st.retStats = null;
     st.lastProbs = null; st.lastAction = 0;
     st.lastHidden = { sensors: [], interneurons: [], motors: [] };
     if (st.rawData) buildModel(st.rawData);
@@ -333,13 +346,33 @@
       const G = new Array(T).fill(0);
       let run = 0;
       for (let t = T - 1; t >= 0; t--) { run = steps[t].reward + GAMMA * run; G[t] = run; }
-      const baseline = st.baseline;
 
       /* The whole episode is replayed as ONE batched graph [T, ...] rather
          than T tiny per-step graphs — same loss, far fewer ops/kernels. */
       const S = steps.map((s) => sensorActs(s.state));
       const actions = steps.map((s) => s.actionIdx);
-      const adv = G.map((g) => g - baseline);
+      /* Advantages: G_t minus a TIME-INDEXED baseline b_t — the running
+         average return-to-go at step t of recent episodes — scaled by a
+         running advantage std. Why not the old baseline: it was an
+         episode-TOTAL score while G_t is a discounted return-to-go (≈ a
+         50-step horizon at GAMMA 0.98), a different scale, so every advantage
+         was biased by the sign of the average score (once scores went
+         positive, nearly every action taken was pushed down and good
+         policies eroded). Why time-indexed: return-to-go shrinks toward an
+         episode's end just because less time is left; b_t removes that, and
+         still says "this run did better than recent runs at this point". */
+      const rs = st.retStats || (st.retStats = { b: [], var: 0 });
+      const adv = new Array(T);
+      let sq = 0;
+      for (let t = 0; t < T; t++) {
+        if (rs.b[t] === undefined) { rs.b[t] = G[t]; adv[t] = 0; continue; }
+        adv[t] = G[t] - rs.b[t];
+        rs.b[t] += BASELINE_ALPHA * (G[t] - rs.b[t]);
+        sq += adv[t] * adv[t];
+      }
+      rs.var = rs.var ? (1 - BASELINE_ALPHA) * rs.var + BASELINE_ALPHA * (sq / T) : sq / T;
+      const rStd = Math.sqrt(Math.max(rs.var, 1e-6));
+      for (let t = 0; t < T; t++) adv[t] /= rStd;
       const A = st.config.actions.length;
 
       const lossFn = () => tf.tidy(() => {

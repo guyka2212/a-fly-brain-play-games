@@ -142,6 +142,21 @@ async function main() {
     "getActivity sees non-zero activations for at least one probe state");
   console.log("activations ok — top neuron:", active[0].name, active[0].role, active[0].value.toFixed(3));
 
+  /* The hidden layers must not be dead: with connectome thresholds far above
+     the sensor drive, every interneuron/motor ReLU sat at 0 for every input,
+     so the policy ignored the state entirely. Probe varied states and require
+     both layers to fire somewhere. */
+  let interFired = 0, motorFired = 0;
+  for (let i = 0; i < 200; i++) {
+    flyBrain.act([rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1]);
+    const hh = flyBrain.getHidden();
+    if (hh.interneurons.some((v) => v > 0)) interFired++;
+    if (hh.motors.some((v) => v > 0)) motorFired++;
+  }
+  console.log(`hidden layers alive — states with interneuron firing: ${interFired}/200, motor firing: ${motorFired}/200`);
+  assert.ok(interFired > 0, "interneurons fire for some inputs (not a dead ReLU layer)");
+  assert.ok(motorFired > 0, "motor neurons fire for some inputs (not a dead ReLU layer)");
+
   const probs = flyBrain.getActionProbs();
   assert.equal(probs.length, ACTIONS.length, "action probs per action");
   assert.ok(probs.every((p) => p >= 0 && p <= 1), "probs are probabilities");
